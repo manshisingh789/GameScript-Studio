@@ -1,0 +1,64 @@
+cabal-version:       2.4
+name:                lumenscript-studio
+version:             0.1.0.0
+license:             BSD-3-Clause
+author:              Your Team
+maintainer:          your.email@example.com
+build-type:          Simple
+
+library
+  hs-source-dirs:      src
+  exposed-modules:      Token
+                      , Lexer
+                      , AST
+                      , Parser
+                      , HostBindings
+                      , Semantic.SymbolTable
+                      , Semantic.ScopeResolution
+                      , Semantic.TypeCheck
+                      , Semantic.ErrorLog
+                      , Bytecode.Instruction
+                      , Bytecode.Generator
+                      , VM.VM
+                      , VM.Stack
+                      , VM.EventTrigger
+                      , Simulation.SimState
+                      , Simulation.GridWorld
+                      , GUI.EditorPanel
+                      , GUI.TokenViewer
+                      , GUI.ASTViewer
+                      , GUI.BytecodeViewer
+                      , GUI.StackTraceViewer
+  build-depends:        base >= 4.7 && < 5
+                      , text
+                      , containers
+                      , mtl
+                      , transformers
+                      , parsec
+                      , vector
+                      , threepenny-gui
+                      , pretty
+                      , aeson
+  default-language:    Haskell2010
+
+executable lumenscript-studio-exe
+  main-is:             Main.hs
+  hs-source-dirs:      app
+  build-depends:        base
+                      , lumenscript-studio
+  ghc-options:          -threaded -rtsopts -with-rtsopts=-N -Wall
+  default-language:    Haskell2010
+
+test-suite lumenscript-studio-test
+  type:                exitcode-stdio-1.0
+  main-is:             Spec.hs
+  hs-source-dirs:      test
+  other-modules:        LexerSpec
+                      , ParserSpec
+                      , SemanticSpec
+                      , BytecodeSpec
+                      , VMSpec
+  build-depends:        base
+                      , lumenscript-studio
+                      , hspec
+  default-language:    Haskell2010

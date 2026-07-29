@@ -1,0 +1,1 @@
+if player.level > 5: npc.say("Welcome warrior")

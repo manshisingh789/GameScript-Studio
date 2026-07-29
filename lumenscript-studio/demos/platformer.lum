@@ -1,0 +1,1 @@
+on key_press SPACE: player.jump()
