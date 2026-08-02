@@ -24,7 +24,6 @@ isOperator c = c `elem` "+-*/%=<>!"
 isSymbol :: Char -> Bool
 isSymbol c = c `elem` "(){}[],.;:"
 
-
 -- Scan an identifier or keyword
 scanIdentifier :: String -> Position -> LexResult
 scanIdentifier input pos =

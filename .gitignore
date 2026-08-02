@@ -8,25 +8,26 @@
 # Cabal build artifacts
 dist/
 dist-newstyle/
+cabal.project.local
 
-# machine specific configuration files
-.ghc.environment.*
-
-# ignores all .hi and .o files (object files and interface files)
-*.hi
+# GHC build artifacts
 *.o
+*.hi
+*.p_o
+*.p_hi
 *.exe
+ghc-pkg.log
 
-# GHC profiling data
+# GHC profiling and coverage data
 *.prof
 *.aux
 *.hp
 *.eventlog
-
-# Haskell program coverage data
 .hpc/
 
-# Temporary files
+# Machine-specific configuration
+.ghc.environment.*
+
+# Temporary files from editors
 *~
 #~#
-

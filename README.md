@@ -1,9 +1,75 @@
-# GameScript-Studio
+# LumenScript Studio
 
-#Code owners -
-Manshi Singh
-Arpita Swain
-Aurabhri Sharma
+A custom scripting language and IDE for game development, built with Haskell. This project provides the tools to write, parse, and eventually execute game logic scripts.
+
+## Code Owners
+
+- Arpita Swain
+- Aurabhri Sharma
+- Manshi Singh
+
+## Getting Started
+
+This project is built using the [Haskell Stack tool](https://docs.haskellstack.org/en/stable/README/). All commands should be run from the `lumenscript-studio` directory.
+
+### Prerequisites
+
+Ensure you have [Stack](https://docs.haskellstack.org/en/stable/install_and_upgrade/) installed on your system.
+
+### Building the Project
+
+To build the project and all its dependencies, run the following command:
+
+```bash
+stack build
+```
+
+### Running Tests
+
+The project includes a test suite to verify the functionality of the lexer, parser, and other components. To run the tests, use:
+
+```bash
+stack test
+```
+
+---
+
+## Project Structure
+
+A brief overview of the key directories in this project:
+
+- `src/`: Contains the core source code for the language (Lexer, Parser, etc.).
+- `test/`: Contains the test suites for all components.
+- `demos/`: Contains example `.lum` scripts demonstrating language features.
+- `lumenscript-studio.cabal`: The main package definition file.
+
+---
+
+## LumenScript by Example
+
+Here is a simple script showing an event handler that moves a player entity.
+
+_Move the player to the right on every frame update_
+
+```lumenscript
+on update: player.x = player.x + 1
+```
+
+_On collision with a coin, increase the score_
+
+```lumenscript
+on collision "player" "coin": score = score + 10
+```
+
+## Project Roadmap
+
+- [x] **Lexer**: Tokenizes the source code. (Complete and documented)
+- [ ] **Parser**: Builds an Abstract Syntax Tree (AST) from tokens.
+- [ ] **Semantic Analysis**: Performs type checking and validation.
+- [ ] **Bytecode Compiler**: Compiles the AST to an intermediate representation.
+- [ ] **Virtual Machine (VM)**: Executes the compiled bytecode.
+
+---
 
 ## Lexer Token Set (v1.0)
 
