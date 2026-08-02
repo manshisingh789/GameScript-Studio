@@ -58,6 +58,7 @@ test-suite lumenscript-studio-test
                       , SemanticSpec
                       , BytecodeSpec
                       , VMSpec
+                      , DemoSpec
   build-depends:        base
                       , lumenscript-studio
                       , hspec

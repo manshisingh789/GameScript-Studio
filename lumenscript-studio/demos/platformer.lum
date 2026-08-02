@@ -1,1 +1,20 @@
-on key_press SPACE: player.jump()
+# Player attributes
+player.jumps = 2
+player.can_dash = true
+
+# Double jump
+on key_press "space":
+    if player.jumps > 0:
+        player.jump()
+        player.jumps = player.jumps - 1
+
+# Reset jumps on ground touch
+on collision "player" "ground":
+    player.jumps = 2
+    player.can_dash = true
+
+# Dash move
+on key_press "shift":
+    if player.can_dash:
+        player.dash()
+        player.can_dash = false
