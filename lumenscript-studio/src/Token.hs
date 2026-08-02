@@ -11,7 +11,9 @@ data Token
   | TPlus | TMinus | TMultiply | TDivide | TMod
   | TLt | TGt | TEq | TNotEqual | TLe | TGe
   | TKwLet | TKwIf | TKwElse | TKwOn | TKwKeyPress
+  | TNewline
   | TEOF
+  | TError String
   deriving (Show, Eq)
 
 keywords :: [(String, Token)]
