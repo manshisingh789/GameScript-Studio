@@ -1,0 +1,32 @@
+# DO NOT REMOVE existing ignored files
+
+/documentation-arpita
+
+# Stack build artifacts
+.stack-work/
+
+# Cabal build artifacts
+dist/
+dist-newstyle/
+
+# machine specific configuration files
+.ghc.environment.*
+
+# ignores all .hi and .o files (object files and interface files)
+*.hi
+*.o
+*.exe
+
+# GHC profiling data
+*.prof
+*.aux
+*.hp
+*.eventlog
+
+# Haskell program coverage data
+.hpc/
+
+# Temporary files
+*~
+#~#
+
