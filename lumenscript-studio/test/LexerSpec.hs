@@ -28,18 +28,40 @@ spec = describe "Lexer" $ do
   describe "lexer" $ do
     it "handles a single newline" $ do
       let tokens = lexer "let\nx"
-      map tokenType tokens `shouldBe` [TKwLet, TNewline, TIdent "x", TEOF]
-      map tokenPosition tokens `shouldBe` [Position 1 1, Position 1 4, Position 2 1, Position 2 2]
+      map tokenType tokens `shouldBe` [TKwLet, TIdent "x", TEOF]
+      map tokenPosition tokens `shouldBe` [Position 1 1, Position 2 1, Position 2 2]
 
     it "collapses multiple newlines" $ do
       let tokens = lexer "let\n\nx"
-      map tokenType tokens `shouldBe` [TKwLet, TNewline, TIdent "x", TEOF]
-      map tokenPosition tokens `shouldBe` [Position 1 1, Position 1 4, Position 3 1, Position 3 2]
+      map tokenType tokens `shouldBe` [TKwLet, TIdent "x", TEOF]
+      map tokenPosition tokens `shouldBe` [Position 1 1, Position 3 1, Position 3 2]
+
+    it "emits a separator after each completed statement" $ do
+      let tokens = lexer "let health = 100\nlet score = 0\n"
+      map tokenType tokens `shouldBe`
+        [ TKwLet, TIdent "health", TAssign, TInt 100
+        , TKwLet, TIdent "score", TAssign, TInt 0, TEOF
+        ]
+      map tokenPosition tokens `shouldBe`
+        [ Position 1 1, Position 1 5, Position 1 12, Position 1 14
+        , Position 2 1, Position 2 5, Position 2 11, Position 2 13, Position 3 1
+        ]
+
+    it "does not emit extra tokens for blank lines" $ do
+      let tokens = lexer "let health = 100\n  \t\n\nlet score = 0\n"
+      map tokenType tokens `shouldBe`
+        [ TKwLet, TIdent "health", TAssign, TInt 100
+        , TKwLet, TIdent "score", TAssign, TInt 0, TEOF
+        ]
+      map tokenPosition tokens `shouldBe`
+        [ Position 1 1, Position 1 5, Position 1 12, Position 1 14
+        , Position 4 1, Position 4 5, Position 4 11, Position 4 13, Position 5 1
+        ]
 
     it "separates tokens with newlines" $ do
       let tokens = lexer "1\n2"
-      map tokenType tokens `shouldBe` [TInt 1, TNewline, TInt 2, TEOF]
-      map tokenPosition tokens `shouldBe` [Position 1 1, Position 1 2, Position 2 1, Position 2 2]
+      map tokenType tokens `shouldBe` [TInt 1, TInt 2, TEOF]
+      map tokenPosition tokens `shouldBe` [Position 1 1, Position 2 1, Position 2 2]
 
     it "ignores a comment line" $ do
       let tokens = lexer "# this is a comment"
@@ -48,6 +70,17 @@ spec = describe "Lexer" $ do
     it "ignores a comment at the end of a line" $ do
       let tokens = lexer "let x = 1 # assignment"
       map tokenType tokens `shouldBe` [TKwLet, TIdent "x", TAssign, TInt 1, TEOF]
+
+    it "preserves the newline after a comment and advances the line number" $ do
+      let tokens = lexer "let x = 5\n# hello\nlet y = 10"
+      map tokenType tokens `shouldBe`
+        [ TKwLet, TIdent "x", TAssign, TInt 5
+        , TKwLet, TIdent "y", TAssign, TInt 10, TEOF
+        ]
+      map tokenPosition tokens `shouldBe`
+        [ Position 1 1, Position 1 5, Position 1 7, Position 1 9
+        , Position 3 1, Position 3 5, Position 3 7, Position 3 9, Position 3 11
+        ]
 
     it "reports an invalid character" $ do
       let tokens = lexer "let x = 1 ~ 2"
@@ -168,8 +201,8 @@ spec = describe "Lexer" $ do
 
     it "stops at a newline" $ do
       let (rest, pos) = skipWhitespace "  \n" (Position 1 1)
-      rest `shouldBe` "\n"
-      pos `shouldBe` Position 1 3
+      rest `shouldBe` ""
+      pos `shouldBe` Position 2 1
 
     it "stops at other characters" $ do
       let (rest, pos) = skipWhitespace "  x" (Position 1 1)
@@ -180,6 +213,12 @@ spec = describe "Lexer" $ do
       let (tok, rest, pos) = scanOperator "== " (Position 1 1)
       tokenType tok `shouldBe` TEq
       rest `shouldBe` " "
+      pos `shouldBe` Position 1 3
+
+  describe "skipComment" $ do
+    it "leaves the newline for newline emission" $ do
+      let (rest, pos) = skipComment "#x" (Position 1 1)
+      rest `shouldBe` ""
       pos `shouldBe` Position 1 3
 
   describe "scanSymbol" $ do

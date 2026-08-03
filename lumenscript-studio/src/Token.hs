@@ -8,14 +8,14 @@ data TokenPayload
   | TString String
   | TBool Bool
   | TIdent String
-  | TDot | TComma | TColon | TSemicolon
+  | TDot | TComma | TColon
   | TLParen | TRParen | TBraceL | TBraceR | TBracketL | TBracketR
   | TAssign
   | TPlus | TMinus | TMultiply | TDivide | TMod
   | TLt | TGt | TEq | TNotEqual | TLe | TGe
+  | TNot
   | TKwLet | TKwIf | TKwElse | TKwElif | TKwOn | TKwKeyPress | TKwCollision | TKwUpdate | TKwInteract
   | TIndent | TDedent
-  | TNewline
   | TEOF
   | TError String
   deriving (Show, Eq)
