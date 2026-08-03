@@ -6,11 +6,17 @@ import Data.Maybe (fromMaybe)
 
 type LexResult = (Token, String, Position)
 
--- Scan a sequence of digits into an integer token
+-- Scan a sequence of digits into an integer token, ignoring underscores
 scanNumber :: String -> Position -> LexResult
+scanNumber input@('-':cs) pos =
+  let (digits, rest) = span isDigit cs
+      payload        = TInt (read ('-':digits))
+      newPos         = foldl advanceChar pos ('-':digits)
+  in (Token payload pos, rest, newPos)
 scanNumber input pos =
-  let (digits, rest) = span isDigit input
-      payload        = TInt (read digits)
+  let (digits, rest) = span (\c -> isDigit c || c == '_') input
+      cleanDigits    = filter (/= '_') digits
+      payload        = TInt (read cleanDigits)
       newPos         = foldl advanceChar pos digits
   in (Token payload pos, rest, newPos)
 
@@ -49,7 +55,7 @@ scanString (_:input) pos = -- skip the opening quote
         Just ec -> go rest newPos (ec : content)
         Nothing -> go rest newPos (c : content) -- unknown escape: keep literal char
     go ('\\':[]) currentPos content =
-      (Token (TError "Unterminated string") pos, "", advanceChar currentPos '\\')
+      (Token (TError "Unterminated string literal") pos, "", advanceChar currentPos '\\')
     go ('"':rest) currentPos content =
       let payload = TString (reverse content)
           newPos  = advanceChar currentPos '"'
@@ -59,7 +65,7 @@ scanString (_:input) pos = -- skip the opening quote
     go (c:cs) currentPos content =
       go cs (advanceChar currentPos c) (c : content)
     go "" endPos _ =
-      (Token (TError "Unterminated string") pos, "", endPos)
+      (Token (TError "Unterminated string literal") pos, "", endPos)
 scanString "" pos = (Token (TError "Unexpected end of file") pos, "", pos)
 
 -- Map recognized escape characters to their literal value
@@ -81,7 +87,7 @@ scanOperator input@(c1:cs) pos =
   where
     single = case lookup c1 singleCharOps of
                Just payload -> (Token payload pos, cs, advanceChar pos c1)
-               Nothing -> (Token (TError ("Invalid operator: " ++ [c1])) pos, cs, pos)
+               Nothing -> (Token (TError ("Unknown operator: " ++ [c1])) pos, cs, pos)
 
 multiCharOps :: [(String, TokenPayload)]
 multiCharOps = [("==", TEq), ("!=", TNotEqual), ("<=", TLe), (">=", TGe)]
@@ -162,7 +168,7 @@ lexAtom (c:cs) pos
   | isOperator c       = let (tok, rest, pos') = scanOperator (c:cs) pos in (Just tok, rest, pos')
   | isSymbol c         = let (tok, rest, pos') = scanSymbol (c:cs) pos in (Just tok, rest, pos')
   | c == '#'           = let (rest, pos') = skipComment cs (advanceChar pos '#') in (Nothing, rest, pos')
-  | otherwise          = (Just (Token TInvalid pos), cs, advanceChar pos c)
+  | otherwise          = (Just (Token (TError ("Unexpected character: " ++ [c])) pos), cs, advanceChar pos c)
 
 advanceChar :: Position -> Char -> Position
 advanceChar pos '\n' = pos { line = line pos + 1, column = 1 }

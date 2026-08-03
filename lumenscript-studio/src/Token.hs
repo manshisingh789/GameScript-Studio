@@ -15,10 +15,8 @@ data TokenPayload
   | TLt | TGt | TEq | TNotEqual | TLe | TGe
   | TNot
   | TKwLet | TKwIf | TKwElse | TKwElif | TKwOn | TKwKeyPress | TKwCollision | TKwUpdate | TKwInteract
-  | TIndent | TDedent
   | TNewline
   | TBlank
-  | TInvalid
   | TEOF
   | TError String
   deriving (Show, Eq)

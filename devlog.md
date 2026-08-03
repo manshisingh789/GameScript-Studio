@@ -3,6 +3,14 @@
 
 A chronological log of the project's development milestones.
 
+### 4 August 2026
+
+- [Arpita] **Verified Tokenization**: Audited the lexer correctly handles all specified language features, including keywords, identifiers, literals (integers and strings), operators, and symbols.
+- [Arpita] **Finalized Core Mechanics**: Validated position tracking, comment and whitespace handling, and the use of `NEWLINE` as a statement separator.
+
+  **Challenges:**
+  - Collaboration Friction: Concurrent work on core files like `Token.hs` and `Lexer.hs` led to merge conflicts and development bottlenecks.
+
 ### 3 August 2026
 
 - [Arpita] **Lexer Completion & Integration**: Finished implementing the remaining core lexer functions and their corresponding unit tests in `LexerSpec.hs`.
