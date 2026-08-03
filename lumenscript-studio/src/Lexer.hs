@@ -11,12 +11,8 @@ scanNumber :: String -> Position -> LexResult
 scanNumber input pos =
   let (digits, rest) = span isDigit input
       payload        = TInt (read digits)
-      newPos         = advanceBy (length digits) pos
+      newPos         = foldl advanceChar pos digits
   in (Token payload pos, rest, newPos)
-
--- Utility: advance position by N columns
-advanceBy :: Int -> Position -> Position
-advanceBy n (Position l c) = Position l (c + n)
 
 isOperator :: Char -> Bool
 isOperator c = c `elem` "+-*/%=<>!"
@@ -30,7 +26,7 @@ scanIdentifier :: String -> Position -> LexResult
 scanIdentifier input pos =
   let (ident, rest) = span isIdentChar input
       payload       = lookupKeyword ident
-      newPos        = advanceBy (length ident) pos
+      newPos        = foldl advanceChar pos ident
   in (Token payload pos, rest, newPos)
 
 -- Utility: what counts as identifier characters
@@ -46,18 +42,21 @@ lookupKeyword ident = fromMaybe (TIdent ident) (lookup ident keywords)
 -- Scan a string literal, supporting \" \\ \n \t escapes
 scanString :: String -> Position -> LexResult
 scanString (_:input) pos = -- skip the opening quote
-  go input (advanceBy 1 pos) []
+  go input (advanceChar pos '"') []
   where
     go ('\\':c:rest) currentPos content =
-      case escapeChar c of
-        Just ec -> go rest (advanceBy 2 currentPos) (ec : content)
-        Nothing -> go rest (advanceBy 2 currentPos) (c : content) -- unknown escape: keep literal char
+      let newPos = foldl advanceChar currentPos ['\\', c]
+      in case escapeChar c of
+        Just ec -> go rest newPos (ec : content)
+        Nothing -> go rest newPos (c : content) -- unknown escape: keep literal char
     go ('\\':[]) currentPos content =
-      (Token (TError "Unterminated string") pos, "", advanceBy 1 currentPos)
+      (Token (TError "Unterminated string") pos, "", advanceChar currentPos '\\')
     go ('"':rest) currentPos content =
       let payload = TString (reverse content)
-          newPos  = advanceBy 1 currentPos
+          newPos  = advanceChar currentPos '"'
       in (Token payload pos, rest, newPos)
+    go ('\n':cs) currentPos _ =
+      (Token (TError "Newline in string") pos, cs, currentPos)
     go (c:cs) currentPos content =
       go cs (advanceChar currentPos c) (c : content)
     go "" endPos _ =
@@ -77,12 +76,12 @@ scanOperator [] pos = (Token (TError "Unexpected end of file") pos, "", pos)
 scanOperator input@(c1:cs) pos =
     case input of
         (c1:c2:rest) -> case lookup [c1,c2] multiCharOps of
-                            Just payload -> (Token payload pos, rest, advanceBy 2 pos)
+                            Just payload -> (Token payload pos, rest, foldl advanceChar pos [c1, c2])
                             Nothing -> single
         _ -> single
   where
     single = case lookup c1 singleCharOps of
-               Just payload -> (Token payload pos, cs, advanceBy 1 pos)
+               Just payload -> (Token payload pos, cs, advanceChar pos c1)
                Nothing -> (Token (TError ("Invalid operator: " ++ [c1])) pos, cs, pos)
 
 multiCharOps :: [(String, TokenPayload)]
@@ -97,7 +96,7 @@ singleCharOps = [('+', TPlus), ('-', TMinus), ('*', TMultiply), ('/', TDivide),
 scanSymbol :: String -> Position -> LexResult
 scanSymbol (c:cs) pos =
   case lookup c symbolMap of
-    Just payload -> (Token payload pos, cs, advanceBy 1 pos)
+    Just payload -> (Token payload pos, cs, advanceChar pos c)
     Nothing      -> (Token (TError ("Invalid symbol: " ++ [c])) pos, cs, pos)
 scanSymbol "" pos = (Token (TError "Unexpected end of file") pos, "", pos)
 
@@ -115,7 +114,7 @@ symbolMap = [
 -- turned into TNewline tokens; line/column tracking still works via
 -- advanceChar's '\n' case.
 isWhitespaceChar :: Char -> Bool
-isWhitespaceChar c = c `elem` " \t\r\n"
+isWhitespaceChar c = c `elem` " \t\r"
 
 skipWhitespace :: String -> Position -> (String, Position)
 skipWhitespace input pos =
@@ -123,16 +122,14 @@ skipWhitespace input pos =
       newPos     = foldl advanceChar pos ws
   in (rest, newPos)
 
--- Single source of truth for comment skipping, with consistent
--- position tracking via advanceBy (reused by lexAtom below).
 skipComment :: String -> Position -> (String, Position)
 skipComment input pos =
   let (comment, rest) = span (/= '\n') input
-      newPos          = advanceBy (length comment) pos
+      newPos          = foldl advanceChar pos comment
   in (rest, newPos)
 
 lexer :: String -> [Token]
-lexer input = reverse $ go input initialPos []
+lexer input = postProcessTokens $ reverse $ go input initialPos []
   where
     go :: String -> Position -> [Token] -> [Token]
     go "" pos acc = Token TEOF pos : acc
@@ -142,11 +139,22 @@ lexer input = reverse $ go input initialPos []
             Just tok -> go rest pos' (tok : acc)
             Nothing  -> go rest pos' acc
 
+postProcessTokens :: [Token] -> [Token]
+postProcessTokens [] = []
+postProcessTokens (t1:t2:ts)
+  | isDoubleNewline t1 t2 = postProcessTokens (Token TBlank (tokenPosition t1) : ts)
+  | otherwise = t1 : postProcessTokens (t2:ts)
+postProcessTokens (t:ts) = t : postProcessTokens ts
+
+isDoubleNewline :: Token -> Token -> Bool
+isDoubleNewline t1 t2 = tokenType t1 == TNewline && tokenType t2 == TNewline
+
 type LexAtomResult = (Maybe Token, String, Position)
 
 lexAtom :: String -> Position -> LexAtomResult
 lexAtom "" pos = (Just (Token TEOF pos), "", pos)
 lexAtom (c:cs) pos
+  | c == '\n' = (Just (Token TNewline pos), cs, advanceChar pos '\n')
   | isWhitespaceChar c = let (rest, pos') = skipWhitespace (c:cs) pos
                           in (Nothing, rest, pos')
   | isDigit c          = let (tok, rest, pos') = scanNumber (c:cs) pos in (Just tok, rest, pos')
@@ -154,9 +162,8 @@ lexAtom (c:cs) pos
   | c == '"'           = let (tok, rest, pos') = scanString (c:cs) pos in (Just tok, rest, pos')
   | isOperator c       = let (tok, rest, pos') = scanOperator (c:cs) pos in (Just tok, rest, pos')
   | isSymbol c         = let (tok, rest, pos') = scanSymbol (c:cs) pos in (Just tok, rest, pos')
-  | c == '#'           = let (rest, pos') = skipComment cs (advanceBy 1 pos)
-                          in (Nothing, rest, pos')
-  | otherwise          = (Just (Token (TError ("Invalid character: " ++ [c])) pos), cs, advanceBy 1 pos)
+  | c == '#'           = let (rest, pos') = skipComment cs (advanceChar pos '#') in (Nothing, rest, pos')
+  | otherwise          = (Just (Token TInvalid pos), cs, advanceChar pos c)
 
 advanceChar :: Position -> Char -> Position
 advanceChar pos '\n' = pos { line = line pos + 1, column = 1 }
