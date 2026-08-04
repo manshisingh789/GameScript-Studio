@@ -46,12 +46,12 @@ getBinDir, getLibDir, getDynLibDir, getDataDir, getLibexecDir, getSysconfDir :: 
 
 
 bindir, libdir, dynlibdir, datadir, libexecdir, sysconfdir :: FilePath
-bindir     = "C:\\Users\\LENOVO\\OneDrive\\Desktop\\gamescript_studio\\GameScript-Studio\\lumenscript-studio\\.stack-work\\install\\8a13d1de\\bin"
-libdir     = "C:\\Users\\LENOVO\\OneDrive\\Desktop\\gamescript_studio\\GameScript-Studio\\lumenscript-studio\\.stack-work\\install\\8a13d1de\\lib\\x86_64-windows-ghc-9.6.6\\lumenscript-studio-0.1.0.0-9ZAsUK9JWrqA2uwmmH3D5g"
-dynlibdir  = "C:\\Users\\LENOVO\\OneDrive\\Desktop\\gamescript_studio\\GameScript-Studio\\lumenscript-studio\\.stack-work\\install\\8a13d1de\\lib\\x86_64-windows-ghc-9.6.6"
-datadir    = "C:\\Users\\LENOVO\\OneDrive\\Desktop\\gamescript_studio\\GameScript-Studio\\lumenscript-studio\\.stack-work\\install\\8a13d1de\\share\\x86_64-windows-ghc-9.6.6\\lumenscript-studio-0.1.0.0"
-libexecdir = "C:\\Users\\LENOVO\\OneDrive\\Desktop\\gamescript_studio\\GameScript-Studio\\lumenscript-studio\\.stack-work\\install\\8a13d1de\\libexec\\x86_64-windows-ghc-9.6.6\\lumenscript-studio-0.1.0.0"
-sysconfdir = "C:\\Users\\LENOVO\\OneDrive\\Desktop\\gamescript_studio\\GameScript-Studio\\lumenscript-studio\\.stack-work\\install\\8a13d1de\\etc"
+bindir     = "C:\\Users\\Manshi\\Desktop\\GameStudio\\GameScript-Studio\\lumenscript-studio\\.stack-work\\install\\2be25f5f\\bin"
+libdir     = "C:\\Users\\Manshi\\Desktop\\GameStudio\\GameScript-Studio\\lumenscript-studio\\.stack-work\\install\\2be25f5f\\lib\\x86_64-windows-ghc-9.6.6\\lumenscript-studio-0.1.0.0-9ZAsUK9JWrqA2uwmmH3D5g"
+dynlibdir  = "C:\\Users\\Manshi\\Desktop\\GameStudio\\GameScript-Studio\\lumenscript-studio\\.stack-work\\install\\2be25f5f\\lib\\x86_64-windows-ghc-9.6.6"
+datadir    = "C:\\Users\\Manshi\\Desktop\\GameStudio\\GameScript-Studio\\lumenscript-studio\\.stack-work\\install\\2be25f5f\\share\\x86_64-windows-ghc-9.6.6\\lumenscript-studio-0.1.0.0"
+libexecdir = "C:\\Users\\Manshi\\Desktop\\GameStudio\\GameScript-Studio\\lumenscript-studio\\.stack-work\\install\\2be25f5f\\libexec\\x86_64-windows-ghc-9.6.6\\lumenscript-studio-0.1.0.0"
+sysconfdir = "C:\\Users\\Manshi\\Desktop\\GameStudio\\GameScript-Studio\\lumenscript-studio\\.stack-work\\install\\2be25f5f\\etc"
 
 getBinDir     = catchIO (getEnv "lumenscript_studio_bindir")     (\_ -> return bindir)
 getLibDir     = catchIO (getEnv "lumenscript_studio_libdir")     (\_ -> return libdir)

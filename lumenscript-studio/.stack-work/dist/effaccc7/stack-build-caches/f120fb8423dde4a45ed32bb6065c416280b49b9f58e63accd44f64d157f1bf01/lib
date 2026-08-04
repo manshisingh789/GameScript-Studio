@@ -1,0 +1,44 @@
+C:\Users\Manshi\Desktop\GameStudio\GameScript-Studio\lumenscript-studio\lumenscript-studio.cabal:
+  hash: dee5bda4eae8ad080dd0fefdd88120d454877bd163240775507f2f710c4323b9
+C:\Users\Manshi\Desktop\GameStudio\GameScript-Studio\lumenscript-studio\src\AST.hs:
+  hash: 294ce5627c43ba04a0e541083bcfceca317df124cf40ae1d1d984d25c688728e
+C:\Users\Manshi\Desktop\GameStudio\GameScript-Studio\lumenscript-studio\src\Bytecode\Generator.hs:
+  hash: e4579fa33c430f003d973fd55488eb6e1b6ca3f97149649839b3837247001b0b
+C:\Users\Manshi\Desktop\GameStudio\GameScript-Studio\lumenscript-studio\src\Bytecode\Instruction.hs:
+  hash: 596aae7fa485802093ad320accc70088e5513cfe30d15815b6da411e06424be5
+C:\Users\Manshi\Desktop\GameStudio\GameScript-Studio\lumenscript-studio\src\GUI\ASTViewer.hs:
+  hash: 42ea41645bc63d02969f5bf3fe5216ade50adb50831a9a9863f4eda5d91403c7
+C:\Users\Manshi\Desktop\GameStudio\GameScript-Studio\lumenscript-studio\src\GUI\BytecodeViewer.hs:
+  hash: ff6a3c84ec77ba3872dc3d8fe48d3ffd1f7f69d37ba9eddf5a226f28137fe6a7
+C:\Users\Manshi\Desktop\GameStudio\GameScript-Studio\lumenscript-studio\src\GUI\EditorPanel.hs:
+  hash: 73c65c55c9348572de9df301009f3eb3a55ca6e2426ab002f2b0d0fcd41017e0
+C:\Users\Manshi\Desktop\GameStudio\GameScript-Studio\lumenscript-studio\src\GUI\StackTraceViewer.hs:
+  hash: cd4ab0215dfe354854bc9ba8f5fb52f8b340a52d7a060b7501e71c4232dc22a1
+C:\Users\Manshi\Desktop\GameStudio\GameScript-Studio\lumenscript-studio\src\GUI\TokenViewer.hs:
+  hash: 6211c89df41accdc9567888d0e184be982b54684b64975a6c1a16cf43e1552dc
+C:\Users\Manshi\Desktop\GameStudio\GameScript-Studio\lumenscript-studio\src\HostBindings.hs:
+  hash: d32e1393b9daf92a73c9cd80f6107b503c802099820fb3db4378d420a22835f3
+C:\Users\Manshi\Desktop\GameStudio\GameScript-Studio\lumenscript-studio\src\Lexer.hs:
+  hash: 799dfea678ec9d1b9fe0381b37c260ef4ceca9158f27ce6672e720d13450021b
+C:\Users\Manshi\Desktop\GameStudio\GameScript-Studio\lumenscript-studio\src\Parser.hs:
+  hash: 012b5feb8bbd22dcd9ac9854c34540afdebf9cfc4059faf6c1e685d1c3414acf
+C:\Users\Manshi\Desktop\GameStudio\GameScript-Studio\lumenscript-studio\src\Semantic\ErrorLog.hs:
+  hash: 59ce96f27da6e0c53425f2b0b8d8f2840b0388855a3438ea8d6dca86badb1ae0
+C:\Users\Manshi\Desktop\GameStudio\GameScript-Studio\lumenscript-studio\src\Semantic\ScopeResolution.hs:
+  hash: cc515cfe5c9c232717ef65f22a901d3d9756953afb3e2b57781cc70330816a63
+C:\Users\Manshi\Desktop\GameStudio\GameScript-Studio\lumenscript-studio\src\Semantic\SymbolTable.hs:
+  hash: 85d7b9fc99922e6d257b50f8b3d1067031aeb6f5de7eaa0d9457c2f3c2dbcad5
+C:\Users\Manshi\Desktop\GameStudio\GameScript-Studio\lumenscript-studio\src\Semantic\TypeCheck.hs:
+  hash: 33cfbcfc2fa958df607b6cb81504fa478a1a4ee3e5d6d69427591f34c14bc5be
+C:\Users\Manshi\Desktop\GameStudio\GameScript-Studio\lumenscript-studio\src\Simulation\GridWorld.hs:
+  hash: 8ce16ad5b0d909ea59bca05d6f7955e3b379aaa0ff0f52739abd58a91d785875
+C:\Users\Manshi\Desktop\GameStudio\GameScript-Studio\lumenscript-studio\src\Simulation\SimState.hs:
+  hash: 5012f24035e6d7c835c6ee68b171162d1fd414bc6fc1438180f75a587c330187
+C:\Users\Manshi\Desktop\GameStudio\GameScript-Studio\lumenscript-studio\src\Token.hs:
+  hash: 98e2895d3067b62a3a0d82c12dbcb2588fe7c50a8b5254e6a4197fbf90cb4d95
+C:\Users\Manshi\Desktop\GameStudio\GameScript-Studio\lumenscript-studio\src\VM\EventTrigger.hs:
+  hash: 8d2849a3963a741a41cfaa262750da009f7130b35c42704bea438654b42e4869
+C:\Users\Manshi\Desktop\GameStudio\GameScript-Studio\lumenscript-studio\src\VM\Stack.hs:
+  hash: 307308b75b0bfd09fdd164789065d172b51249eccca3601039b46fc52bfbdae1
+C:\Users\Manshi\Desktop\GameStudio\GameScript-Studio\lumenscript-studio\src\VM\VM.hs:
+  hash: 28c4c8e84656026104c17a419cc86b20df3f0e0f383f8f935721f00fe156c21f
