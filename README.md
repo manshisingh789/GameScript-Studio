@@ -32,13 +32,23 @@ The project includes a test suite to verify the functionality of the lexer, pars
 stack test
 ```
 
+### Running Demos
+
+To see the parser in action with example scripts, you can run the following commands:
+
+```bash
+stack run demos/dialogue_tree.lum
+stack run demos/enemy_ai.lum
+stack run demos/platformer.lum
+```
+
 ---
 
 ## Project Structure
 
 A brief overview of the key directories in this project:
 
-- `src/`: Contains the core source code for the language (Lexer, Parser, etc.).
+- `src/`: Contains the core source code for the language (Lexer, Parser, ParserTypes, ParserExpressions, etc.).
 - `test/`: Contains the test suites for all components.
 - `demos/`: Contains example `.lum` scripts demonstrating language features.
 - `lumenscript-studio.cabal`: The main package definition file.
@@ -64,8 +74,8 @@ on collision "player" "coin": score = score + 10
 ## Project Roadmap
 
 - [x] **Lexer**: Tokenizes the source code. (Complete and documented)
-- [x] **Parser**: Builds an Abstract Syntax Tree (AST) from tokens.
-- [ ] **Semantic Analysis**: Performs type checking and validation.
+- [x] **Parser**: Builds a bare-minimum Abstract Syntax Tree (AST) from tokens. New files `ParserTypes.hs` and `ParserExpressions.hs` have been added to support this.
+- [ ] **Semantic Analysis**: The next step is to perform type checking and validation on the AST.
 - [ ] **Bytecode Compiler**: Compiles the AST to an intermediate representation.
 - [ ] **Virtual Machine (VM)**: Executes the compiled bytecode.
 
