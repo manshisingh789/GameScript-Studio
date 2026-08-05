@@ -11,8 +11,9 @@ import qualified DemoSpec
 main :: IO ()
 main = hspec $ do
   LexerSpec.spec
+  DemoSpec.spec
+  
   ParserSpec.spec
   SemanticSpec.spec
   BytecodeSpec.spec
   VMSpec.spec
-  DemoSpec.spec
