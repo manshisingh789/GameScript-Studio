@@ -1,6 +1,6 @@
 module Bytecode.Instruction where
 
-import AST (Ident, CompOp)
+import AST (Ident, BinOp)
 
 type Label = String
 
@@ -8,7 +8,7 @@ data Instr
   = PUSH_INT Int
   | PUSH_STR String
   | LOAD Ident Ident            -- LOAD player distance
-  | CMP CompOp
+  | CMP BinOp
   | JUMP_IF_FALSE Label
   | JUMP Label
   | LABEL Label

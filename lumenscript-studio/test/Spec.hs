@@ -6,6 +6,7 @@ import qualified ParserSpec
 import qualified SemanticSpec
 import qualified BytecodeSpec
 import qualified VMSpec
+import qualified DemoSpec
 
 main :: IO ()
 main = hspec $ do
@@ -14,3 +15,4 @@ main = hspec $ do
   SemanticSpec.spec
   BytecodeSpec.spec
   VMSpec.spec
+  DemoSpec.spec

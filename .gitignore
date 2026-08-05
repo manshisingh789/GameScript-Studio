@@ -1,0 +1,33 @@
+# DO NOT REMOVE existing ignored files
+
+/documentation-arpita
+
+# Stack build artifacts
+.stack-work/
+
+# Cabal build artifacts
+dist/
+dist-newstyle/
+cabal.project.local
+
+# GHC build artifacts
+*.o
+*.hi
+*.p_o
+*.p_hi
+*.exe
+ghc-pkg.log
+
+# GHC profiling and coverage data
+*.prof
+*.aux
+*.hp
+*.eventlog
+.hpc/
+
+# Machine-specific configuration
+.ghc.environment.*
+
+# Temporary files from editors
+*~
+#~#

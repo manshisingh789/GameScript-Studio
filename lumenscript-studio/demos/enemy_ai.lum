@@ -1,1 +1,18 @@
-if player.distance < 10: enemy.attack() else: enemy.patrol()
+# Enemy state machine
+enemy.state = "patrol"
+
+on update:
+    if enemy.state == "patrol":
+        enemy.patrol()
+        if player.distance_to(enemy) < 10:
+            enemy.state = "chase"
+    elif enemy.state == "chase":
+        enemy.move_towards(player)
+        if player.distance_to(enemy) < 2:
+            enemy.state = "attack"
+        elif player.distance_to(enemy) > 15:
+            enemy.state = "patrol"
+    elif enemy.state == "attack":
+        enemy.attack(player)
+        if player.distance_to(enemy) > 2:
+            enemy.state = "chase"
