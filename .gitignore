@@ -28,4 +28,5 @@ ghc-pkg.log
 
 # Temporary files from editors
 *~
-#~#
+
+.vscode

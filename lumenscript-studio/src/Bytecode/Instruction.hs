@@ -1,16 +1,27 @@
 module Bytecode.Instruction where
 
-import AST (Ident, BinOp)
+import AST (BinOp, UnaryOp, Ident)
 
 type Label = String
+type Define = String
 
 data Instr
   = PUSH_INT Int
   | PUSH_STR String
-  | LOAD Ident Ident            -- LOAD player distance
-  | CMP BinOp
-  | JUMP_IF_FALSE Label
+  | PUSH_BOOL Bool
+  | LOAD Ident
+  | STORE Ident
+  | LOAD_MEMBER Ident
+  | STORE_MEMBER Ident
+  | OP BinOp
+  | UOP UnaryOp
   | JUMP Label
+  | JUMP_IF_FALSE Label
   | LABEL Label
-  | CALL Ident Ident Int        -- CALL npc say 1   (arg count)
+  | CALL Ident Int -- method name, arg count
   deriving (Show, Eq)
+
+data CompiledProgram = CompiledProgram
+  { mainBlock :: [Instr]
+  , handlers :: [(Label, [Instr])]
+  } deriving (Show, Eq)
