@@ -64,7 +64,7 @@ on collision "player" "coin": score = score + 10
 ## Project Roadmap
 
 - [x] **Lexer**: Tokenizes the source code. (Complete and documented)
-- [ ] **Parser**: Builds an Abstract Syntax Tree (AST) from tokens.
+- [x] **Parser**: Builds an Abstract Syntax Tree (AST) from tokens.
 - [ ] **Semantic Analysis**: Performs type checking and validation.
 - [ ] **Bytecode Compiler**: Compiles the AST to an intermediate representation.
 - [ ] **Virtual Machine (VM)**: Executes the compiled bytecode.
