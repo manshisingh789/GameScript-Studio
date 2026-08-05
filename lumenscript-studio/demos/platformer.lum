@@ -1,20 +1,32 @@
-# Player attributes
-player.jumps = 2
-player.can_dash = true
+let jumps = 2
+let canDash = true
 
-# Double jump
-on key_press "space":
-    if player.jumps > 0:
-        player.jump()
-        player.jumps = player.jumps - 1
+on key_press space: {
 
-# Reset jumps on ground touch
-on collision "player" "ground":
-    player.jumps = 2
-    player.can_dash = true
+    if jumps > 0: {
 
-# Dash move
-on key_press "shift":
-    if player.can_dash:
-        player.dash()
-        player.can_dash = false
+        jump()
+        jumps = jumps - 1
+
+    } else: {
+
+        print("No jumps remaining.")
+
+    }
+
+}
+
+on key_press shift: {
+
+    if canDash: {
+
+        dash()
+        canDash = false
+
+    } else: {
+
+        print("Dash unavailable.")
+
+    }
+
+}

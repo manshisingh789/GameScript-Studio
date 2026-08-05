@@ -1,18 +1,23 @@
-# Enemy state machine
-enemy.state = "patrol"
+let state = 0
+let distance = 12
 
-on update:
-    if enemy.state == "patrol":
-        enemy.patrol()
-        if player.distance_to(enemy) < 10:
-            enemy.state = "chase"
-    elif enemy.state == "chase":
-        enemy.move_towards(player)
-        if player.distance_to(enemy) < 2:
-            enemy.state = "attack"
-        elif player.distance_to(enemy) > 15:
-            enemy.state = "patrol"
-    elif enemy.state == "attack":
-        enemy.attack(player)
-        if player.distance_to(enemy) > 2:
-            enemy.state = "chase"
+on key_press p: {
+
+    if state == 0: {
+
+        print("Enemy is patrolling.")
+
+        if distance < 10: {
+            state = 1
+        }
+
+    } else: {
+
+        print("Enemy is chasing.")
+
+        if distance > 15: {
+            state = 0
+        }
+
+    }
+}

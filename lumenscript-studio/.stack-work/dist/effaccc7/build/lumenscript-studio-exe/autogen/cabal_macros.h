@@ -103,7 +103,7 @@
 #endif /* MIN_TOOL_VERSION_runghc */
 
 #ifndef CURRENT_COMPONENT_ID
-#define CURRENT_COMPONENT_ID "lumenscript-studio-0.1.0.0-J8WgInBTMec6zgnJtvSZEu-lumenscript-studio-exe"
+#define CURRENT_COMPONENT_ID "lumenscript-studio-0.1.0.0-D0agmdt8Kz8EWeZNiwycjz-lumenscript-studio-exe"
 #endif /* CURRENT_COMPONENT_ID */
 #ifndef CURRENT_PACKAGE_VERSION
 #define CURRENT_PACKAGE_VERSION "0.1.0.0"

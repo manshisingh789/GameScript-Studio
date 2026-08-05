@@ -1,14 +1,11 @@
-# Simple dialogue tree
-npc.dialogue = "start"
+let dialogue = 0
 
-on interact "npc":
-    if npc.dialogue == "start":
-        npc.say("Hello, traveler! Are you a warrior or a mage?")
-        player.choice("I'm a warrior.", "warrior_path")
-        player.choice("I'm a mage.", "mage_path")
-    elif npc.dialogue == "warrior_path":
-        npc.say("A warrior! Excellent. The world needs more heroes.")
-        npc.dialogue = "end"
-    elif npc.dialogue == "mage_path":
-        npc.say("A mage! The arcane arts are a path of great power.")
-        npc.dialogue = "end"
+on key_press e: {
+    if dialogue == 0: {
+        print("Hello, traveler!")
+        print("Choose your path.")
+        dialogue = 1
+    } else: {
+        print("Good luck on your journey!")
+    }
+}

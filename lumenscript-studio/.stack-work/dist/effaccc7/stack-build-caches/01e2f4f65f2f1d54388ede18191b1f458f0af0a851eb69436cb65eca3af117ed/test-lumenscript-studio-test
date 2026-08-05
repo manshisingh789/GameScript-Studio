@@ -1,14 +1,16 @@
 C:\Users\LENOVO\OneDrive\Desktop\gamescript_studio\GameScript-Studio\lumenscript-studio\lumenscript-studio.cabal:
-  hash: dee5bda4eae8ad080dd0fefdd88120d454877bd163240775507f2f710c4323b9
+  hash: 5c08c984b9770bec98878487b0df3d8ae85950655e99fcaf4d88ac7325ef327d
 C:\Users\LENOVO\OneDrive\Desktop\gamescript_studio\GameScript-Studio\lumenscript-studio\test\BytecodeSpec.hs:
   hash: a1f7243d91dda0ab13d9939d569bf0abb09b898850e1b7383980f3e7fae471ae
+C:\Users\LENOVO\OneDrive\Desktop\gamescript_studio\GameScript-Studio\lumenscript-studio\test\DemoSpec.hs:
+  hash: 77beaeb171bb73b45be474b17f4258eeb86c4c8fbd60e5fd77dbd1a30ad56a06
 C:\Users\LENOVO\OneDrive\Desktop\gamescript_studio\GameScript-Studio\lumenscript-studio\test\LexerSpec.hs:
-  hash: fba60b27bc47af28c64ef239b2ad3c47881739508641391d8b7029162112d9e8
+  hash: 809f9b040e6beff284f5ce1a45025cf8f09a3ec8117cf5d69fe7c64bdf6cc078
 C:\Users\LENOVO\OneDrive\Desktop\gamescript_studio\GameScript-Studio\lumenscript-studio\test\ParserSpec.hs:
-  hash: 9f4f5eda80e355750ba809c19623a8944637fc5085ff0ec4c9f9d309ae637266
+  hash: ab8505b440625982a3535c8535fa641cbd4da10dc22156c280786e35769cc731
 C:\Users\LENOVO\OneDrive\Desktop\gamescript_studio\GameScript-Studio\lumenscript-studio\test\SemanticSpec.hs:
   hash: 01979f37cfcca5d9109801af587acf6059c4026f553410b6f0286e5f59285eb2
 C:\Users\LENOVO\OneDrive\Desktop\gamescript_studio\GameScript-Studio\lumenscript-studio\test\Spec.hs:
-  hash: 69e82bb9d42b1f9eca95a148bf20af0f53573de9ef7b66271acc424aba559cc4
+  hash: 79349a9caf1f26f1bb8b3d4251c6f072d0da29ac09694533905dbea3eeafe4a3
 C:\Users\LENOVO\OneDrive\Desktop\gamescript_studio\GameScript-Studio\lumenscript-studio\test\VMSpec.hs:
   hash: b95cff15a9c531e6768628f8fe891faeffb7d400332cd9b4ffd8efb3af0ed0c2
