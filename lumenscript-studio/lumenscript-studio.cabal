@@ -12,6 +12,8 @@ library
                       , Lexer
                       , AST
                       , Parser
+                      , ParserTypes
+                      , ParserExpressions
                       , HostBindings
                       , Semantic.SymbolTable
                       , Semantic.ScopeResolution
@@ -58,6 +60,7 @@ test-suite lumenscript-studio-test
                       , SemanticSpec
                       , BytecodeSpec
                       , VMSpec
+                      , DemoSpec
   build-depends:        base
                       , lumenscript-studio
                       , hspec

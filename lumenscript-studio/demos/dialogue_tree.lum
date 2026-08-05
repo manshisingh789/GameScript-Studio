@@ -1,1 +1,11 @@
-if player.level > 5: npc.say("Welcome warrior")
+let dialogue = 0
+
+on key_press e: {
+    if dialogue == 0: {
+        print("Hello, traveler!")
+        print("Choose your path.")
+        dialogue = 1
+    } else: {
+        print("Good luck on your journey!")
+    }
+}

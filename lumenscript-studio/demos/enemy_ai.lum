@@ -1,1 +1,23 @@
-if player.distance < 10: enemy.attack() else: enemy.patrol()
+let state = 0
+let distance = 12
+
+on key_press p: {
+
+    if state == 0: {
+
+        print("Enemy is patrolling.")
+
+        if distance < 10: {
+            state = 1
+        }
+
+    } else: {
+
+        print("Enemy is chasing.")
+
+        if distance > 15: {
+            state = 0
+        }
+
+    }
+}

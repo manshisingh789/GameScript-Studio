@@ -1,1 +1,32 @@
-on key_press SPACE: player.jump()
+let jumps = 2
+let canDash = true
+
+on key_press space: {
+
+    if jumps > 0: {
+
+        jump()
+        jumps = jumps - 1
+
+    } else: {
+
+        print("No jumps remaining.")
+
+    }
+
+}
+
+on key_press shift: {
+
+    if canDash: {
+
+        dash()
+        canDash = false
+
+    } else: {
+
+        print("Dash unavailable.")
+
+    }
+
+}
