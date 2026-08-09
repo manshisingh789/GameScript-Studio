@@ -47,7 +47,7 @@ getBinDir, getLibDir, getDynLibDir, getDataDir, getLibexecDir, getSysconfDir :: 
 
 bindir, libdir, dynlibdir, datadir, libexecdir, sysconfdir :: FilePath
 bindir     = "C:\\Users\\LENOVO\\OneDrive\\Desktop\\gamescript_studio\\GameScript-Studio\\lumenscript-studio\\.stack-work\\install\\8a13d1de\\bin"
-libdir     = "C:\\Users\\LENOVO\\OneDrive\\Desktop\\gamescript_studio\\GameScript-Studio\\lumenscript-studio\\.stack-work\\install\\8a13d1de\\lib\\x86_64-windows-ghc-9.6.6\\lumenscript-studio-0.1.0.0-7WKH23j2noyGIX7SGuvyGK"
+libdir     = "C:\\Users\\LENOVO\\OneDrive\\Desktop\\gamescript_studio\\GameScript-Studio\\lumenscript-studio\\.stack-work\\install\\8a13d1de\\lib\\x86_64-windows-ghc-9.6.6\\lumenscript-studio-0.1.0.0-9ZAsUK9JWrqA2uwmmH3D5g"
 dynlibdir  = "C:\\Users\\LENOVO\\OneDrive\\Desktop\\gamescript_studio\\GameScript-Studio\\lumenscript-studio\\.stack-work\\install\\8a13d1de\\lib\\x86_64-windows-ghc-9.6.6"
 datadir    = "C:\\Users\\LENOVO\\OneDrive\\Desktop\\gamescript_studio\\GameScript-Studio\\lumenscript-studio\\.stack-work\\install\\8a13d1de\\share\\x86_64-windows-ghc-9.6.6\\lumenscript-studio-0.1.0.0"
 libexecdir = "C:\\Users\\LENOVO\\OneDrive\\Desktop\\gamescript_studio\\GameScript-Studio\\lumenscript-studio\\.stack-work\\install\\8a13d1de\\libexec\\x86_64-windows-ghc-9.6.6\\lumenscript-studio-0.1.0.0"

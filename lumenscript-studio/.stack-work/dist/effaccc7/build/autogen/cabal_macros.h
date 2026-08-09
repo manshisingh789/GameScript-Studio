@@ -183,10 +183,10 @@
 #endif /* MIN_TOOL_VERSION_runghc */
 
 #ifndef CURRENT_PACKAGE_KEY
-#define CURRENT_PACKAGE_KEY "lumenscript-studio-0.1.0.0-7WKH23j2noyGIX7SGuvyGK"
+#define CURRENT_PACKAGE_KEY "lumenscript-studio-0.1.0.0-9ZAsUK9JWrqA2uwmmH3D5g"
 #endif /* CURRENT_packageKey */
 #ifndef CURRENT_COMPONENT_ID
-#define CURRENT_COMPONENT_ID "lumenscript-studio-0.1.0.0-7WKH23j2noyGIX7SGuvyGK"
+#define CURRENT_COMPONENT_ID "lumenscript-studio-0.1.0.0-9ZAsUK9JWrqA2uwmmH3D5g"
 #endif /* CURRENT_COMPONENT_ID */
 #ifndef CURRENT_PACKAGE_VERSION
 #define CURRENT_PACKAGE_VERSION "0.1.0.0"
