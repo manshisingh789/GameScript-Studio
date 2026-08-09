@@ -3,6 +3,16 @@
 
 A chronological log of the project's development milestones.
 
+### 6 August 2026
+
+- [Arpita] **Prototyped Bytecode Generation**: Implemented a prototype of the bytecode generator (`Generator.hs`) and redesigned the instruction set (`Instruction.hs`). This work was done in isolation, using dummy values, as the semantic analysis module was not yet complete.
+- [Arpita] **Added Foundational Tests**: Created initial tests for the bytecode generator to validate core functionality like variable handling, arithmetic, and control flow.
+- [Arpita] **Minor Test Suite Cleanup**: Reordered the test execution pipeline in `Spec.hs`.
+
+  **Challenges:**
+  - **Dependency Delays**: The semantic analysis module, a key dependency, was incomplete due to a team member's illness and subsequent reassignment. This required the bytecode generator to be developed as a prototype, with the understanding that it will need to be integrated properly later.
+  - **State Management**: Managing state across different compilation units in the generator was complex but was addressed by using a monadic approach.
+
 ### 4 August 2026
 
 - [Arpita] **Verified Tokenization**: Audited the lexer correctly handles all specified language features, including keywords, identifiers, literals (integers and strings), operators, and symbols.
