@@ -1,7 +1,5 @@
 # DO NOT REMOVE existing ignored files
 
-/documentation-arpita
-
 # Stack build artifacts
 .stack-work/
 
