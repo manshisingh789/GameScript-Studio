@@ -1,14 +1,16 @@
 module SemanticSpec (spec) where
 
+-- External Imports
 import Test.Hspec
 
+-- Internal Imports
 import AST
-import Token hiding (TString, TInt)
 import Semantic.ErrorLog (SemanticError(..), Type(..), runSemanticM, semanticOk, hasFatalErrors)
 import Semantic.TypeCheck (analyzeProgram)
+import Token hiding (TInt, TString)
 
 
--- Test helpers
+-- Test Helpers
 
 p :: Position
 p = Position 1 1
@@ -19,6 +21,12 @@ p2 = Position 2 1
 p3 :: Position
 p3 = Position 3 1
 
+-- Helper function to run semantic analysis on a program
+analyze :: Program -> [SemanticError]
+analyze program = snd $ runSemanticM (analyzeProgram program)
+
+
+-- Test Data
 
 validProgram :: Program
 validProgram =
@@ -42,16 +50,14 @@ spec = do
     describe "valid programs" $ do
 
       it "passes a program containing valid declarations" $ do
-        let (_, errors) = runSemanticM (analyzeProgram validProgram)
-        semanticOk errors `shouldBe` True
+        analyze validProgram `shouldSatisfy` semanticOk
 
       it "allows variables to be used after declaration" $ do
         let program =
               [ Decl "x" (LitInt 10) p
               , ExprStmt (Var "x" p2)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        semanticOk errors `shouldBe` True
+        analyze program `shouldSatisfy` semanticOk
 
       it "allows integer arithmetic" $ do
         let program =
@@ -62,8 +68,7 @@ spec = do
                     p)
                   p
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        semanticOk errors `shouldBe` True
+        analyze program `shouldSatisfy` semanticOk
 
       it "allows boolean conditions" $ do
         let program =
@@ -73,8 +78,7 @@ spec = do
                   Nothing
                   p
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        semanticOk errors `shouldBe` True
+        analyze program `shouldSatisfy` semanticOk
 
       it "allows valid unary integer negation" $ do
         let program =
@@ -82,8 +86,7 @@ spec = do
                   (Unary Neg (LitInt 10) p)
                   p
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        semanticOk errors `shouldBe` True
+        analyze program `shouldSatisfy` semanticOk
 
       it "allows valid boolean negation" $ do
         let program =
@@ -91,8 +94,7 @@ spec = do
                   (Unary Not (LitBool True) p)
                   p
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        semanticOk errors `shouldBe` True
+        analyze program `shouldSatisfy` semanticOk
 
 
     -- -----------------------------------------------------------------------
@@ -105,8 +107,7 @@ spec = do
         let program =
               [ ExprStmt (Var "missing" p)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        errors
+        analyze program
           `shouldBe`
             [ UndefinedVariable "missing" p
             ]
@@ -116,16 +117,14 @@ spec = do
               [ Decl "x" (LitInt 10) p
               , ExprStmt (Var "x" p2)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        errors `shouldBe` []
+        analyze program `shouldBe` []
 
       it "reports use of a variable before declaration" $ do
         let program =
               [ ExprStmt (Var "x" p)
               , Decl "x" (LitInt 10) p2
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        errors
+        analyze program
           `shouldBe`
             [ UndefinedVariable "x" p
             ]
@@ -135,8 +134,7 @@ spec = do
               [ Decl "x" (LitInt 10) p
               , Decl "x" (LitInt 20) p2
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        errors
+        analyze program
           `shouldBe`
             [ DuplicateDeclaration "x" p2 p
             ]
@@ -152,8 +150,7 @@ spec = do
                   Nothing
                   p
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        semanticOk errors `shouldBe` True
+        analyze program `shouldSatisfy` semanticOk
 
       it "does not allow a variable declared inside an if block outside the block" $ do
         let program =
@@ -165,8 +162,7 @@ spec = do
                   p2
               , ExprStmt (Var "inside" p3)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        errors
+        analyze program
           `shouldBe`
             [ UndefinedVariable "inside" p3
             ]
@@ -179,8 +175,7 @@ spec = do
                   p2
               , ExprStmt (Var "inside" p3)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        errors
+        analyze program
           `shouldBe`
             [ UndefinedVariable "inside" p3
             ]
@@ -196,8 +191,7 @@ spec = do
         let program =
               [ ExprStmt (Var "player" p)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        semanticOk errors `shouldBe` True
+        analyze program `shouldSatisfy` semanticOk
 
       it "allows a valid player property" $ do
         let program =
@@ -207,8 +201,7 @@ spec = do
                     "distance"
                     p2)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        semanticOk errors `shouldBe` True
+        analyze program `shouldSatisfy` semanticOk
 
       it "allows another valid player property" $ do
         let program =
@@ -218,8 +211,7 @@ spec = do
                     "level"
                     p2)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        semanticOk errors `shouldBe` True
+        analyze program `shouldSatisfy` semanticOk
 
       it "reports an undefined member on a built-in object" $ do
         let program =
@@ -229,8 +221,7 @@ spec = do
                     "health"
                     p2)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        errors
+        analyze program
           `shouldBe`
             [ UndefinedMember "player" "health" p2
             ]
@@ -253,8 +244,7 @@ spec = do
                     []
                     p3)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        semanticOk errors `shouldBe` True
+        analyze program `shouldSatisfy` semanticOk
 
       it "reports an arity mismatch for player.jump()" $ do
         let program =
@@ -267,8 +257,7 @@ spec = do
                     [LitInt 10]
                     p3)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        errors
+        analyze program
           `shouldBe`
             [ ArityMismatch "player.jump" 0 1 p3
             ]
@@ -284,8 +273,7 @@ spec = do
                     [LitStr "Hello"]
                     p3)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        semanticOk errors `shouldBe` True
+        analyze program `shouldSatisfy` semanticOk
 
       it "reports an arity mismatch for npc.say() with no arguments" $ do
         let program =
@@ -298,8 +286,7 @@ spec = do
                     []
                     p3)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        errors
+        analyze program
           `shouldBe`
             [ ArityMismatch "npc.say" 1 0 p3
             ]
@@ -315,14 +302,32 @@ spec = do
                     [LitInt 42]
                     p3)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        errors
+        analyze program
           `shouldBe`
             [ TypeMismatch
                 TString
                 TInt
                 "argument to npc.say"
                 p3
+            ]
+
+      it "reports only the root error within a function argument" $ do
+        let program =
+              [ ExprStmt
+                  (Call
+                    (Member
+                      (Var "npc" p)
+                      "say"
+                      p2)
+                    -- This argument expression contains a type error
+                    [Binary Add (LitInt 1) (LitStr "bad") p3]
+                    p3)
+              ]
+        -- We should only see the error from the invalid addition,
+        -- not a TypeMismatch error for the 'say' call itself.
+        analyze program
+          `shouldBe`
+            [ InvalidOperandType "+" TString p3
             ]
 
 
@@ -340,8 +345,7 @@ spec = do
                     (LitStr "hello")
                     p)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        errors
+        analyze program
           `shouldBe`
             [ InvalidOperandType "+" TString p
             ]
@@ -353,8 +357,7 @@ spec = do
                     (LitStr "hello")
                     p)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        errors
+        analyze program
           `shouldBe`
             [ InvalidOperandType "-" TString p
             ]
@@ -366,8 +369,7 @@ spec = do
                     (LitInt 10)
                     p)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        errors
+        analyze program
           `shouldBe`
             [ InvalidOperandType "!" TInt p
             ]
@@ -380,8 +382,7 @@ spec = do
                   Nothing
                   p
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        errors
+        analyze program
           `shouldBe`
             [ InvalidCondition TInt p
             ]
@@ -394,8 +395,7 @@ spec = do
                     (LitInt 20)
                     p)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        semanticOk errors `shouldBe` True
+        analyze program `shouldSatisfy` semanticOk
 
       it "reports a type mismatch for equality comparison of different types" $ do
         let program =
@@ -405,8 +405,7 @@ spec = do
                     (LitStr "10")
                     p)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        errors
+        analyze program
           `shouldBe`
             [ TypeMismatch
                 TInt
@@ -423,8 +422,7 @@ spec = do
                     (LitInt 20)
                     p)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        semanticOk errors `shouldBe` True
+        analyze program `shouldSatisfy` semanticOk
 
       it "reports invalid operands for relational comparison of non-integers" $ do
         let program =
@@ -434,8 +432,7 @@ spec = do
                     (LitStr "b")
                     p)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        errors
+        analyze program
           `shouldBe`
             [ InvalidOperandType "<" TString p
             ]
@@ -445,8 +442,7 @@ spec = do
               [ Decl "x" (LitInt 10) p
               , Assign "x" (LitStr "hello") p2
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        errors
+        analyze program
           `shouldBe`
             [ AssignmentTypeMismatch
                 "x"
@@ -460,8 +456,35 @@ spec = do
               [ Decl "x" (LitInt 10) p
               , Assign "x" (LitInt 20) p2
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        semanticOk errors `shouldBe` True
+        analyze program `shouldSatisfy` semanticOk
+
+      it "reports an error when calling a non-function variable" $ do
+        let program =
+              [ Decl "x" (LitInt 10) p
+              , ExprStmt (Call (Var "x" p2) [] p2)
+              ]
+        analyze program
+          `shouldBe`
+            [ TypeMismatch
+                (TFunction [] TUnknown) -- Expected a function
+                TInt                    -- But got an Int
+                "calling x"
+                p2
+            ]
+
+      it "reports assignment type mismatch inside an if block" $ do
+        let program =
+              [ Decl "x" (LitInt 10) p
+              , If (LitBool True)
+                  [ Assign "x" (LitStr "hello") p2
+                  ]
+                  Nothing
+                  p
+              ]
+        analyze program
+          `shouldBe`
+            [ AssignmentTypeMismatch "x" TInt TString p2
+            ]
 
 
     -- -----------------------------------------------------------------------
@@ -486,8 +509,8 @@ spec = do
                   Nothing
                   p3
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        hasFatalErrors errors `shouldBe` True
+        let errors = analyze program
+        errors `shouldSatisfy` hasFatalErrors
         errors
           `shouldBe`
             [ UndefinedVariable "missing" p
@@ -504,20 +527,17 @@ spec = do
                     (LitStr "bad")
                     p2)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        length errors `shouldBe` 2
+        length (analyze program) `shouldBe` 2
 
       it "marks semantic analysis as failed whenever any error exists" $ do
         let program =
               [ ExprStmt (Var "missing" p)
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        hasFatalErrors errors `shouldBe` True
+        analyze program `shouldSatisfy` hasFatalErrors
 
       it "marks semantic analysis as passed when no errors exist" $ do
         let program =
               [ Decl "x" (LitInt 10) p
               , Assign "x" (LitInt 20) p2
               ]
-            (_, errors) = runSemanticM (analyzeProgram program)
-        semanticOk errors `shouldBe` True
+        analyze program `shouldSatisfy` semanticOk

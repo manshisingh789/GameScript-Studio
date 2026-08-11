@@ -23,11 +23,6 @@ import Data.List (intercalate)
 -- ---------------------------------------------------------------------
 
 -- | The value types GameScript's semantic analyzer reasons about.
--- TVoid covers event-handler bodies and function calls used as
--- statements (e.g. "player.jump()" has no value to consume).
--- TUnknown is a placeholder returned after an error has already been
--- logged, so the walk can keep going without triggering a cascade of
--- unrelated follow-on type errors from the same root cause.
 data Type
   = TInt
   | TString
@@ -45,9 +40,8 @@ instance Show Type where
   show TUnknown        = "<unknown>"
   show (TFunction as r) = "(" ++ intercalate ", " (map show as) ++ ") -> " ++ show r
 
--- | Reserved for future soft diagnostics (e.g. unused variables) that
--- shouldn't block bytecode generation. Every check currently in scope
--- for FR4 is Fatal.
+-- | All semantic checks produce a diagnostic with a severity.
+-- Fatal errors will block bytecode generation; warnings will not.
 data Severity = Warning | Fatal
   deriving (Eq, Show)
 
@@ -55,9 +49,7 @@ data Severity = Warning | Fatal
 -- Diagnostics
 -- ---------------------------------------------------------------------
 
--- | Every distinct semantic problem GameScript Studio can report,
--- covering both checking passes: ScopeResolution (Undefined*,
--- DuplicateDeclaration) and TypeCheck (the rest).
+-- | Every distinct semantic problem the compiler can report.
 data SemanticError
   = UndefinedVariable     { errName :: String, errPos :: Position }
   | UndefinedFunction     { errName :: String, errPos :: Position }
@@ -68,14 +60,16 @@ data SemanticError
   | InvalidOperandType    { operator :: String, operandTy :: Type, errPos :: Position }
   | InvalidCondition      { actualTy :: Type, errPos :: Position }
   | AssignmentTypeMismatch{ errName :: String, declaredTy :: Type, assignedTy :: Type, errPos :: Position }
+  -- A generic warning for non-fatal issues, like unused variables.
+  | GenericWarning        { message :: String, errPos :: Position }
   deriving (Eq, Show)
 
+-- | Determines if an error should block compilation.
 severityOf :: SemanticError -> Severity
-severityOf _ = Fatal
+severityOf (GenericWarning {}) = Warning
+severityOf _                   = Fatal
 
--- | Human-readable form, styled to match the parser's
--- "<message> at <position>" error reporting so token, syntax, and
--- semantic errors all read consistently in the UI's error panel.
+-- | Human-readable form, styled to match the parser's error reporting.
 renderError :: SemanticError -> String
 renderError (UndefinedVariable name pos) =
   at pos ++ "undefined variable '" ++ name ++ "'"
@@ -95,44 +89,50 @@ renderError (InvalidCondition ty pos) =
   at pos ++ "condition must be bool, got " ++ show ty
 renderError (AssignmentTypeMismatch name declared assigned pos) =
   at pos ++ "cannot assign " ++ show assigned ++ " to '" ++ name ++ "' declared as " ++ show declared
+renderError (GenericWarning msg pos) =
+  at pos ++ "warning: " ++ msg
 
 at :: Position -> String
 at pos = show pos ++ ": "
 
--- | All collected errors, one per line, in the order they were found --
--- what the Script Editor's error panel (FR4) actually displays.
+-- | Renders all collected errors, one per line.
 renderErrors :: [SemanticError] -> String
 renderErrors = intercalate "\n" . map renderError
 
--- | Whether bytecode generation should be blocked (FR4: semantic
--- errors must be reported "before proceeding to bytecode generation").
+-- | Checks if any logged errors are fatal.
 hasFatalErrors :: [SemanticError] -> Bool
 hasFatalErrors = any ((== Fatal) . severityOf)
 
--- | No errors were logged at all.
+-- | Checks if no errors were logged.
 semanticOk :: [SemanticError] -> Bool
 semanticOk = null
 
 -- ---------------------------------------------------------------------
 -- SemanticM: an error-accumulating checker monad
 --
--- A plain `Either SemanticError a`, like ParseResult, can't collect
--- more than one error -- `>>=` short-circuits on the first Left. Since
--- FR4 wants every semantic problem reported at once (not one typo per
--- recompile), SemanticM instead always keeps going, threading an
--- accumulated error list alongside the value being built. ScopeResolution
--- and TypeCheck each run one full AST walk in this monad; when a check
--- fails they log the error and return a placeholder (TUnknown, or the
--- expected type) so the walk continues cleanly instead of aborting.
+-- This is a custom implementation of a Writer monad, specialized for
+-- accumulating a list of `SemanticError`s.
+--
+-- A standard `Either SemanticError a` monad would short-circuit on the
+-- first error. This monad allows the semantic analysis passes to log
+-- multiple errors in a single traversal of the AST.
 -- ---------------------------------------------------------------------
 newtype SemanticM a = SemanticM { runSM :: [SemanticError] -> (a, [SemanticError]) }
 
 instance Functor SemanticM where
+  -- fmap :: (a -> b) -> SemanticM a -> SemanticM b
+  -- Applies a pure function to the value inside the monad, leaving the error log untouched.
   fmap f (SemanticM g) = SemanticM $ \errs ->
     let (a, errs') = g errs in (f a, errs')
 
 instance Applicative SemanticM where
+  -- pure :: a -> SemanticM a
+  -- Lifts a pure value into the monad without adding any errors.
   pure x = SemanticM $ \errs -> (x, errs)
+
+  -- (<*>) :: SemanticM (a -> b) -> SemanticM a -> SemanticM b
+  -- Applies a function from within the monad to a value from within the monad,
+  -- sequencing the errors from both.
   (SemanticM f) <*> (SemanticM g) = SemanticM $ \errs ->
     let (h, errs1) = f errs
         (a, errs2) = g errs1
@@ -140,30 +140,23 @@ instance Applicative SemanticM where
 
 instance Monad SemanticM where
   return = pure
+
+  -- (>>=) :: SemanticM a -> (a -> SemanticM b) -> SemanticM b
+  -- Chains two monadic computations together, passing the result of the first
+  -- to the second, and accumulating errors from both.
   (SemanticM g) >>= f = SemanticM $ \errs ->
     let (a, errs') = g errs
         SemanticM h = f a
     in h errs'
 
--- | Record a problem and keep going. The caller supplies whatever
--- placeholder value lets the walk continue, e.g.:
---
--- > checkVar name pos = case lookupVar name scope of
--- >   Just ty -> pure ty
--- >   Nothing -> do
--- >     logError (UndefinedVariable name pos)
--- >     pure TUnknown
+-- | Records a fatal error and allows the AST walk to continue.
 logError :: SemanticError -> SemanticM ()
 logError e = SemanticM $ \errs -> ((), errs ++ [e])
 
--- | Same mechanism as logError; kept as a distinct name so call sites
--- say what they mean, and so a future Warning severity can be filtered
--- out of hasFatalErrors without revisiting every call site.
-logWarning :: SemanticError -> SemanticM ()
-logWarning = logError
+-- | Records a non-fatal warning.
+logWarning :: String -> Position -> SemanticM ()
+logWarning msg pos = SemanticM $ \errs -> ((), errs ++ [GenericWarning msg pos])
 
--- | Run a full semantic check pass, returning the final value (which
--- may be a best-effort result if errors were logged along the way)
--- plus every error collected, in the order they were found.
+-- | Runs a semantic analysis pass, returning the final value and all collected errors.
 runSemanticM :: SemanticM a -> (a, [SemanticError])
 runSemanticM m = runSM m []

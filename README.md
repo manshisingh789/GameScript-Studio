@@ -8,6 +8,8 @@ A custom scripting language and IDE for game development, built with Haskell. Th
 - Aurabhri Sharma
 - Manshi Singh
 
+---
+
 ## Getting Started
 
 This project is built using the [Haskell Stack tool](https://docs.haskellstack.org/en/stable/README/). All commands should be run from the `lumenscript-studio` directory.
@@ -36,12 +38,17 @@ stack test
 
 ## Project Structure
 
-A brief overview of the key directories in this project:
-
-- `src/`: Contains the core source code for the language (Lexer, Parser, etc.).
-- `test/`: Contains the test suites for all components.
-- `demos/`: Contains example `.lum` scripts demonstrating language features.
-- `lumenscript-studio.cabal`: The main package definition file.
+- `src/`: Contains the core source code for the language
+  - `Lexer/`: Handles tokenization.
+  - `Parser/`: Builds the Abstract Syntax Tree (AST).
+  - `Semantic/`: Performs type checking and validation.
+  - `Bytecode/`: Bytecode generation module (in progress)
+  - `GUI/`: IDE components
+  - `Simulation/`: Game simulation logic
+  - `VM/`: Virtual machine implementation (not started)
+- `test/`: Contains the test suites for all components
+- `demos/`: Example `.lum` scripts demonstrating language features
+- `lumenscript-studio.cabal`: The main package definition file
 
 ---
 
@@ -64,10 +71,15 @@ on collision "player" "coin": score = score + 10
 ## Project Roadmap
 
 - [x] **Lexer**: Tokenizes the source code. (Complete and documented)
+  - Complete (lexer-v1.0-beta)
 - [x] **Parser**: Builds an Abstract Syntax Tree (AST) from tokens.
-- [ ] **Semantic Analysis**: Performs type checking and validation.
+  - Complete (parser-v1.0-beta)
+- [x] **Semantic Analysis**: Performs type checking and validation.
+  - Complete with 124 passing tests (semantic-v1.0-beta)
 - [ ] **Bytecode Compiler**: Compiles the AST to an intermediate representation.
+  - In progress (branch feature/bytecode-generation)
 - [ ] **Virtual Machine (VM)**: Executes the compiled bytecode.
+  - Not started.
 
 ---
 
