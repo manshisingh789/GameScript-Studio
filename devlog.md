@@ -3,9 +3,21 @@
 
 A chronological log of the project's development milestones.
 
+### 12 August 2026
+
+- **Advanced Bytecode Implementation**: Made significant progress on the bytecode module, focusing on architectural improvements and feature expansion.
+  - **Expanded Instruction Set**: Added 12 new instructions to `Instruction.hs`, including `CALL`, `RET`, `HALT`, and instructions for stack manipulation (`POP`, `DUPLICATE`, `SWAP`) and data structures (`ARRAY_GET`/`SET`, `DICT_GET`/`SET`).
+  - **Refactored Bytecode Generator**: Reworked the generator to use a pure functional style with an explicit symbol table, which now uses more efficient stack indices for local variables.
+  - **Modular Symbol Table**: Extracted the symbol table into its own dedicated module (`Bytecode/SymbolTable.hs`) to improve code structure and separate concerns.
+  - **Corrected Stack Management**: Fixed a runtime issue by adding a `POP` instruction after an `ExprStmt` in the `generateStmt` function (`Bytecode/Generator.hs`). This prevents stack overflow by ensuring expression statement results are correctly discarded.
+  - **Updated Bytecode Tests**: Aligned the bytecode test suite (`BytecodeSpec.hs`) with the stack management fix, updating all relevant tests to expect the new `POP` instruction.
+
+  **Challenges:**
+  - **Architectural Shift**: Transitioning the bytecode generator from a stateful to a pure functional design required a significant refactoring effort but has resulted in a more robust and maintainable implementation.
+
 ### 11 August 2026
 
-- **Finalized Semantic Analysis & Code Refactor**: Fine-tuned the semantic analysis module by implementing an enhanced type checker with a symbol table. Resolved all outstanding errors and expanded test coverage, bringing the total to 124 passing tests.
+- **Finalized Semantic Analysis & Code Refactor**: Fine-tuned the semantic analysis module by implementing an enhanced type checker with a `SymbolTable.hs. Resolved all outstanding errors and expanded test coverage, bringing the total to 124 passing tests.
 - **Improved Code Quality & Documentation**: Refactored the semantic analysis modules (`Semantic.hs`, `TypeCheck.hs`, `SymbolTable.hs`, `ErrorLog.hs`) and tests (`SemanticSpec.hs`) to follow Haskell best practices, significantly improving clarity, structure, and maintainability.
   - **Enhanced Internal Documentation**: Added extensive comments to clarify the design rationale, including the idiomatic use of `Either` and `Maybe`, the separation of concerns in the symbol table, and the purpose of the custom `SemanticM` monad for accumulating multiple errors.
   - **First-Class Warnings**: Implemented a distinct `logWarning` function with a `GenericWarning` type to properly separate non-fatal warnings from errors.

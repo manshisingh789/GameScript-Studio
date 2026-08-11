@@ -77,7 +77,8 @@ on collision "player" "coin": score = score + 10
 - [x] **Semantic Analysis**: Performs type checking and validation.
   - Complete with 124 passing tests (semantic-v1.0-beta)
 - [ ] **Bytecode Compiler**: Compiles the AST to an intermediate representation.
-  - In progress (branch feature/bytecode-generation)
+  - Implemented: The core architecture is in place, featuring an expanded instruction set (CALL, RET, HALT), a pure functional generator, and a modular symbol table.
+  - Next Steps: Future work involves finalizing the binary format, adding optimization passes, and implementing full support for all control flow and event handlers.
 - [ ] **Virtual Machine (VM)**: Executes the compiled bytecode.
   - Not started.
 
