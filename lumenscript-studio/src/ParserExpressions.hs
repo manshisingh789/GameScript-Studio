@@ -23,7 +23,7 @@ parseComparison ts = do
   case peek rest of
     Just t | Just op <- comparisonOp (tokenType t) -> do
       (rhs, rest') <- parseAddition (drop 1 rest)
-      pure (Binary op lhs rhs, rest')
+      pure (Binary op lhs rhs (tokenPosition t), rest')
     _ -> pure (lhs, rest)
   where
     comparisonOp TEq       = Just Eq
@@ -43,7 +43,7 @@ parseAddition ts = do
     go acc rest = case peek rest of
       Just t | Just op <- additionOp (tokenType t) -> do
         (rhs, rest') <- parseMultiplication (drop 1 rest)
-        go (Binary op acc rhs) rest'
+        go (Binary op acc rhs (tokenPosition t)) rest'
       _ -> pure (acc, rest)
     additionOp TPlus  = Just Add
     additionOp TMinus = Just Sub
@@ -58,7 +58,7 @@ parseMultiplication ts = do
     go acc rest = case peek rest of
       Just t | Just op <- mulOp (tokenType t) -> do
         (rhs, rest') <- parseUnary (drop 1 rest)
-        go (Binary op acc rhs) rest'
+        go (Binary op acc rhs (tokenPosition t)) rest'
       _ -> pure (acc, rest)
     mulOp TMultiply = Just Mul
     mulOp TDivide   = Just Div
@@ -70,10 +70,10 @@ parseUnary :: [Token] -> ParseResult Expr
 parseUnary (t:ts)
   | tokenType t == TMinus = do
       (operand, rest) <- parseUnary ts
-      pure (Unary Neg operand, rest)
+      pure (Unary Neg operand (tokenPosition t), rest)
   | tokenType t == TNot = do
       (operand, rest) <- parseUnary ts
-      pure (Unary Not operand, rest)
+      pure (Unary Not operand (tokenPosition t), rest)
 parseUnary ts = parsePrimary ts
 
 -- primary      = integer | string | boolean | identifier | member | "(" expression ")" ;
@@ -96,7 +96,7 @@ parsePrimary (t:ts) = case tokenType t of
   TInt n       -> pure (LitInt n, ts)
   TString s    -> pure (LitStr s, ts)
   TBool b      -> pure (LitBool b, ts)
-  TIdent name  -> parseCallChain (Var name) ts
+  TIdent name  -> parseCallChain (Var name (tokenPosition t)) ts
   TLParen      -> do
     (inner, rest) <- parseExpression ts
     rest' <- expect TRParen rest
@@ -104,20 +104,20 @@ parsePrimary (t:ts) = case tokenType t of
   other -> Left (ParseError ("Unexpected token in expression: " ++ show other) (tokenPosition t))
 
 -- Extends a base expression with ".field" accesses and/or a trailing
--- "(args)" call, e.g.  player . jump ( )  ->  Call (Member (Var "player") "jump") []
+-- "(args)" call, e.g.  player . jump ( )  ->  Call (Member (Var "player" p) "jump" p') [] p''
 parseCallChain :: Expr -> [Token] -> ParseResult Expr
 parseCallChain base ts = do
   (afterMembers, rest) <- consumeMembers base ts
   case peek rest of
     Just t | tokenType t == TLParen -> do
       (args, rest') <- parseArgumentList (drop 1 rest)
-      pure (Call afterMembers args, rest')
+      pure (Call afterMembers args (tokenPosition t), rest')
     _ -> pure (afterMembers, rest)
   where
     consumeMembers acc (dotTok:fieldTok:more)
       | tokenType dotTok == TDot
       , TIdent field <- tokenType fieldTok
-      = consumeMembers (Member acc field) more
+      = consumeMembers (Member acc field (tokenPosition fieldTok)) more
     consumeMembers _ (dotTok:_)
       | tokenType dotTok == TDot
       = Left (ParseError "Expected identifier after '.'" (tokenPosition dotTok))

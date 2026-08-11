@@ -7,12 +7,10 @@ module Parser
   , parseIfStatement
   , parseEventStatement
   ) where
-
 import Token
 import AST
 import ParserTypes
 import ParserExpressions (parseExpression)
-
 -- program = { statement } ;
 parseProgram :: [Token] -> ParseResult Program
 parseProgram ts = go (skipNewlines ts) []
@@ -23,7 +21,6 @@ parseProgram ts = go (skipNewlines ts) []
       _ -> do
         (stmt, rest') <- parseStatement rest
         go (skipNewlines rest') (stmt:acc)
-
 -- statement = declaration | assignment | eventStatement | ifStatement | functionCall ;
 parseStatement :: [Token] -> ParseResult Stmt
 parseStatement [] = Left (ParseError "Unexpected end of input while parsing statement" eofPosition)
@@ -33,7 +30,6 @@ parseStatement ts@(t:_) = case tokenType t of
   TKwOn  -> parseEventStatement ts
   TIdent _ -> parseAssignmentOrExprStatement ts
   other -> Left (ParseError ("Unexpected token at start of statement: " ++ show other) (tokenPosition t))
-
 -- declaration = "let" identifier "=" expression ;
 parseDeclaration :: [Token] -> ParseResult Stmt
 parseDeclaration (kw:rest0)
@@ -42,12 +38,11 @@ parseDeclaration (kw:rest0)
         | TIdent name <- tokenType idTok
         , tokenType eqTok == TAssign -> do
             (rhs, rest2) <- parseExpression rest1
-            pure (Decl name rhs, rest2)
+            pure (Decl name rhs (tokenPosition idTok), rest2)
       (t:_) -> Left (ParseError "Malformed 'let' declaration: expected identifier '=' expression" (tokenPosition t))
       [] -> Left (ParseError "Unexpected end of input in 'let' declaration" eofPosition)
 parseDeclaration (t:_) = Left (ParseError "Expected 'let'" (tokenPosition t))
 parseDeclaration [] = Left (ParseError "Unexpected end of input" eofPosition)
-
 -- assignment    = identifier "=" expression ;
 -- functionCall  = member "(" [ argumentList ] ")" ;   (as a statement)
 --
@@ -62,13 +57,12 @@ parseAssignmentOrExprStatement (idTok:eqTok:rest)
   | TIdent name <- tokenType idTok
   , tokenType eqTok == TAssign = do
       (rhs, rest') <- parseExpression rest
-      pure (Assign name rhs, rest')
+      pure (Assign name rhs (tokenPosition idTok), rest')
 parseAssignmentOrExprStatement ts = do
   (expr, rest) <- parseExpression ts
   case expr of
     Call {} -> pure (ExprStmt expr, rest)
     _ -> Left (ParseError "Expression statement must be a function call" eofPosition)
-
 -- ifStatement = "if" expression ":" block [ "else" ":" block ] ;
 parseIfStatement :: [Token] -> ParseResult Stmt
 parseIfStatement (kw:rest0)
@@ -80,11 +74,10 @@ parseIfStatement (kw:rest0)
         (elseTok:rest4) | tokenType elseTok == TKwElse -> do
           rest5 <- expect TColon rest4
           (elseBlock, rest6) <- parseBlock rest5
-          pure (If cond thenBlock (Just elseBlock), rest6)
-        _ -> pure (If cond thenBlock Nothing, rest3)
+          pure (If cond thenBlock (Just elseBlock) (tokenPosition kw), rest6)
+        _ -> pure (If cond thenBlock Nothing (tokenPosition kw), rest3)
 parseIfStatement (t:_) = Left (ParseError "Expected 'if'" (tokenPosition t))
 parseIfStatement [] = Left (ParseError "Unexpected end of input" eofPosition)
-
 -- eventStatement = "on" "key_press" identifier ":" block ;
 parseEventStatement :: [Token] -> ParseResult Stmt
 parseEventStatement (onTok:kpTok:idTok:colonTok:rest)
@@ -93,10 +86,9 @@ parseEventStatement (onTok:kpTok:idTok:colonTok:rest)
   , TIdent name <- tokenType idTok
   , tokenType colonTok == TColon = do
       (body, rest') <- parseBlock rest
-      pure (OnEvent (KeyPress name) body, rest')
+      pure (OnEvent (KeyPress name) body (tokenPosition onTok), rest')
 parseEventStatement (t:_) = Left (ParseError "Malformed event statement: expected 'on key_press <identifier> :'" (tokenPosition t))
 parseEventStatement [] = Left (ParseError "Unexpected end of input in event statement" eofPosition)
-
 -- block = "{" { statement } "}" ;
 parseBlock :: [Token] -> ParseResult [Stmt]
 parseBlock ts = do
