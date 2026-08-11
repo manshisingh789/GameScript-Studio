@@ -3,6 +3,7 @@ module Semantic.TypeCheck
   , checkStmts
   , checkStmt
   , inferExpr
+  , analyzeProgram
   ) where
 
 import Control.Monad (foldM)
@@ -11,6 +12,7 @@ import AST
 import Token (Position)
 import Semantic.ErrorLog
 import Semantic.SymbolTable
+import Semantic.ScopeResolution (resolveStmts)
 
 -- | Entry point: type-check a whole program and return every type
 -- error found, in source order.
@@ -24,6 +26,15 @@ import Semantic.SymbolTable
 -- the note at the top of ScopeResolution.hs.
 typeCheckProgram :: Program -> [SemanticError]
 typeCheckProgram stmts = snd (runSemanticM (checkStmts emptyTable stmts))
+
+-- | Runs scope resolution and type checking, returning errors.
+analyzeProgram :: Program -> SemanticM ()
+analyzeProgram prog = do
+  -- 1. Run scope resolution
+  resolvedTable <- resolveStmts emptyTable prog
+  -- 2. Run type checking
+  _ <- checkStmts emptyTable prog
+  pure ()
 
 -- | Type-check a sequence of statements left-to-right, threading the
 -- (now type-aware) symbol table forward.
@@ -42,8 +53,9 @@ checkStmt st (Assign name rhs pos) = do
     Nothing   -> pure st        -- undefined variable already reported by ScopeResolution
     Just info
       | symbolType info == actualTy
-      || symbolType info == TUnknown   -- declared type unresolved (its own rhs already had an error); don't cascade
-      || actualTy == TUnknown          -- this rhs already had an error; don't cascade
+        -> pure st
+      | symbolType info == TUnknown
+      || actualTy == TUnknown
         -> pure st
       | otherwise ->
           logError (AssignmentTypeMismatch name (symbolType info) actualTy pos) >> pure st
