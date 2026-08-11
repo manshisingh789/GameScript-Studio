@@ -71,13 +71,33 @@ on collision "player" "coin": score = score + 10
 ## Project Roadmap
 
 - [x] **Lexer**: Tokenizes the source code. (Complete and documented)
-  - Complete (lexer-v1.0-beta)
+  - **Key features implemented:**
+    - Complete token set for all language features (keywords, literals, operators).
+    - Robust position tracking and error handling for invalid tokens.
+    - Validated against full demo scripts (`DemoSpec.hs`).
+  - **Key features not yet implemented:** None. Module is frozen (`lexer-v1.0-beta`).
 - [x] **Parser**: Builds an Abstract Syntax Tree (AST) from tokens.
-  - Complete (parser-v1.0-beta)
+  - **Key features implemented:**
+    - Builds a complete Abstract Syntax Tree (AST) from the token stream.
+    - AST data type is frozen, providing a stable interface for subsequent phases.
+  - **Key features not yet implemented:** None. Module is frozen (`parser-v1.0-beta`).
 - [x] **Semantic Analysis**: Performs type checking and validation.
-  - Complete with 124 passing tests (semantic-v1.0-beta)
+  - **Key features implemented:**
+    - Enhanced type checker with a modular symbol table (`SymbolTable.hs`).
+    - Accumulates multiple errors and warnings using a custom monad.
+    - Clear separation of warnings (`GenericWarning`) and errors.
+    - Confirmed feature-complete with 124 passing tests.
+  - **Key features not yet implemented:** None. Module is finalized (`semantic-v1.0-beta`).
 - [ ] **Bytecode Compiler**: Compiles the AST to an intermediate representation.
-  - In progress (branch feature/bytecode-generation)
+  - Advanced implementation in progress (branch `feature/bytecode-generation`).
+  - Key features implemented:
+    - Expanded instruction set (including `CALL`, `RET`, `HALT`).
+    - Pure functional bytecode generator with explicit symbol table.
+    - Modular symbol table for improved code structure.
+  - Key features not yet implemented (planned for Weeks 7-9):
+    - Finalized binary format for bytecode serialization.
+    - Bytecode optimization passes.
+    - Full support for all control flow and event handlers.
 - [ ] **Virtual Machine (VM)**: Executes the compiled bytecode.
   - Not started.
 
