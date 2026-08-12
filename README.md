@@ -37,9 +37,9 @@ stack test
 To see the parser in action with example scripts, you can run the following commands:
 
 ```bash
-stack run demos/dialogue_tree.lum
-stack run demos/enemy_ai.lum
-stack run demos/platformer.lum
+stack run lumenscript-studio-exe -- demos/dialogue_tree.lum
+stack run lumenscript-studio-exe -- demos/enemy_ai.lum
+stack run lumenscript-studio-exe -- demos/platformer.lum
 ```
 
 ---
@@ -84,11 +84,11 @@ on collision "player" "coin": score = score + 10
   - Complete (parser-v1.0-beta)
 - [x] **Semantic Analysis**: Performs type checking and validation.
   - Complete with 124 passing tests (semantic-v1.0-beta)
-- [ ] **Bytecode Compiler**: Compiles the AST to an intermediate representation.
-  - Implemented: The core architecture is in place, featuring an expanded instruction set (CALL, RET, HALT), a pure functional generator, and a modular symbol table.
-  - Next Steps: Future work involves finalizing the binary format, adding optimization passes, and implementing full support for all control flow and event handlers.
+- [x] **Bytecode Compiler**: Compiles the AST to an intermediate representation.
+  - **Status**: Complete (compiler-v1.0-beta).
+  - **Details**: The end-to-end compiler pipeline is complete, integrating the lexer, parser, semantic analysis, and bytecode generation. All tests pass and demo scripts compile successfully.
 - [ ] **Virtual Machine (VM)**: Executes the compiled bytecode.
-  - Not started.
+  - Not started yet
 
 ---
 

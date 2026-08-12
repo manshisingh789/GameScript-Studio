@@ -1,37 +1,23 @@
 module Main where
 
 import System.Environment (getArgs)
-
-import Lexer
-import Parser
+import Compiler (compile, CompilationResult(..))
 
 main :: IO ()
 main = do
     args <- getArgs
-
     case args of
-
         [file] -> do
-
             source <- readFile file
-
-            let tokens = lexer source
-
-            putStrLn "========== TOKENS =========="
-            mapM_ print tokens
-
-            putStrLn "\n========== PARSER =========="
-
-            case parseProgram tokens of
-
-                Left err ->
+            case compile source of
+                CompilationSuccess compiledProgram -> do
+                    putStrLn "Compilation Successful!"
+                    print compiledProgram
+                SemanticErrors errors -> do
+                    putStrLn "Semantic Errors:"
+                    mapM_ print errors
+                ParseError err -> do
+                    putStrLn "Parse Error:"
                     print err
-
-                Right (ast, _) -> do
-
-                    putStrLn "Parse Successful!\n"
-
-                    print ast
-
         _ ->
-            putStrLn "Usage: stack run <script.lum>"
+            putStrLn "Usage: cabal run <script.lum>"

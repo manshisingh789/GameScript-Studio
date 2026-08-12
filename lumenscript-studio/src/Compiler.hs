@@ -29,7 +29,7 @@ compile source =
     Right (ast, _) ->
       let semanticResult = Semantic.analyzeProgram ast
       in if Semantic.semanticPassed semanticResult
-           then case Generator.generateBytecode ast of
+           then case Generator.generateBytecode (Semantic.semanticAst semanticResult) of
                   Left genErr -> error ("Bytecode generation failed after semantic analysis passed: " ++ show genErr) -- This should not happen with a valid AST
                   Right program -> CompilationSuccess program
            else SemanticErrors (Semantic.semanticErrors semanticResult)

@@ -5,8 +5,8 @@ A chronological log of the project's development milestones.
 
 ### 12 August 2026
 
-- **Compiler Pipeline**:
-  - Implemented and tested a new end-to-end compiler pipeline (`compiler.hs`) that integrates lexical analysis, parsing, and bytecode generation.
+- **Successful Integration**: Fully integrated the semantic analysis, bytecode generation, and compiler pipeline modules. All tests are now passing, and demo scripts compile successfully.
+- **Compiler & Symbol Table Fixes**: Implemented and tested a new end-to-end compiler pipeline (`compiler.hs`) that integrates lexical analysis, parsing, and bytecode generation. Corrected bytecode generation and fixed a subtle compiler bug.
 - **Parser & Syntax Overhaul**:
   - Enhanced syntax to support semicolons and flexible `if/else` block styles (colon or brace).
   - Implemented member expression assignments (e.g., `foo.bar = 1`).
@@ -15,9 +15,9 @@ A chronological log of the project's development milestones.
   - Extended the AST with a `GenericEvent` constructor and added a test for invalid l-value assignments.
 
     **Challenges:**
-      - The transition to a pure functional bytecode generator was a significant refactoring effort that improved code quality.
-      - A critical semantic error in the test suite, caused by incorrect `let` keyword usage, was identified and resolved.
-      - Debugged and resolved a cascade of parser bugs, leading to a fully passing test suite.
+    - The transition to a pure functional bytecode generator was a significant refactoring effort that improved code quality.
+    - A critical semantic error in the test suite, and debugged and resolved a cascade of parser bugs.
+    - Encountered and resolved a critical "UnboundVariable" error in bytecode generation.
 
 ### 11 August 2026
 

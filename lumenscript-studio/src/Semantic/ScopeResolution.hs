@@ -11,6 +11,11 @@ import AST
 import Token (Position)
 import Semantic.ErrorLog
 import Semantic.SymbolTable
+import HostBindings (hostGlobalFunctions, GlobalFunction(..))
+
+isHostFunction :: String -> Bool
+isHostFunction name = any (\(GlobalFunction funcName _ _) -> funcName == name) hostGlobalFunctions
+
 
 -- | Entry point: walk a whole program and return every scope-related
 -- error found (UndefinedVariable, UndefinedFunction, UndefinedMember,
@@ -22,8 +27,10 @@ import Semantic.SymbolTable
 -- name with its real inferred type; that keeps scope-checking and
 -- type-checking as two independently testable passes instead of one
 -- tangled one.
-resolveProgram :: Program -> [SemanticError]
-resolveProgram stmts = snd (runSemanticM (resolveStmts emptyTable stmts))
+resolveProgram :: Program -> ([SemanticError], SymbolTable)
+resolveProgram stmts =
+  let (finalTable, errors) = runSemanticM (resolveStmts emptyTable stmts)
+  in (errors, finalTable)
 
 -- | Resolve a sequence of statements left-to-right, threading the
 -- symbol table forward so later statements see earlier "let"s.
@@ -75,9 +82,8 @@ resolveExpr st (Var name pos) =
   case lookupSymbol name st of
     Just _ -> pure ()
     Nothing
-      | isBuiltinObject name -> pure ()  -- "player" etc. used bare; not
-                                          -- this pass's job to say
-                                          -- whether that's meaningful
+      | isBuiltinObject name -> pure ()
+      | isHostFunction name -> pure ()
       | otherwise -> logError (UndefinedVariable name pos)
 resolveExpr st (Member baseExpr field pos) = do
   resolveExpr st baseExpr

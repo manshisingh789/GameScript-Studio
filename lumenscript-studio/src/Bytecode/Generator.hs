@@ -11,7 +11,6 @@ import Control.Monad (foldM)
 import AST
 import Bytecode.Instruction hiding (handlers)
 import qualified Bytecode.SymbolTable as ST
-import Bytecode.SymbolTable (SymbolTable)
 
 -- | Errors that can occur during bytecode generation.
 data BytecodeError
@@ -22,7 +21,7 @@ data BytecodeError
 data GeneratorState = GeneratorState
   { instructions :: [Instr]
   , labelCount   :: Int
-  , symbolTable  :: SymbolTable
+  , symbolTable  :: ST.SymbolTable
   , handlers     :: Map.Map Label [Instr]
   } deriving (Show, Eq)
 
@@ -38,7 +37,8 @@ initialState = GeneratorState
 -- | The main entry point for bytecode generation.
 generateBytecode :: Program -> Either BytecodeError CompiledProgram
 generateBytecode stmts =
-  case generateStmts initialState stmts of
+  let initialState' = initialState { symbolTable = ST.fromProgram stmts }
+  in case generateStmts initialState' stmts of
     Left err -> Left err
     Right finalState ->
       let main = reverse (instructions finalState)
@@ -57,7 +57,12 @@ generateStmt st (ExprStmt expr) = do
 
 generateStmt st (Decl name expr _) = do
   (st', exprInstrs) <- generateExpr st expr
-  let (newSymbolTable, newIndex) = ST.define name (symbolTable st')
+  let (newSymbolTable, newIndex) =
+        if ST.isGlobal (symbolTable st')
+        then case ST.resolve name (symbolTable st') of
+               Just idx -> (symbolTable st', idx)
+               Nothing  -> ST.define name (symbolTable st') -- Should not happen
+        else ST.define name (symbolTable st')
       newInstructions = STORE_LOCAL newIndex : exprInstrs
   pure $ st'
     { instructions = newInstructions ++ instructions st'
@@ -123,7 +128,7 @@ generateStmt st (If cond thenBlock mElseBlock _) = do
 
 generateStmt st (OnEvent (KeyPress eventType) body _) = do
   let handlerLabel = "key_press_" ++ eventType
-  let stForHandler = initialState { labelCount = labelCount st }
+  let stForHandler = initialState { labelCount = labelCount st, symbolTable = symbolTable st }
   stAfterHandler <- generateStmts stForHandler body
   pure $ st
     { handlers = Map.insert handlerLabel (reverse (instructions stAfterHandler)) (handlers st)

@@ -6,10 +6,29 @@ module Bytecode.SymbolTable
   , enterScope
   , exitScope
   , localCount
+  , fromProgram
+  , isGlobal
   ) where
 
 import qualified Data.Map as Map
 import Data.Map (Map)
+import Data.List (foldl')
+import AST (Program, Stmt(..))
+
+isGlobal :: SymbolTable -> Bool
+isGlobal st = length (scopes st) == 1
+
+fromProgram :: Program -> SymbolTable
+fromProgram stmts =
+  let
+    globalNames = foldr collectGlobals [] stmts
+    scopeMap = Map.fromList $ zip globalNames [0..]
+    numLocals = length globalNames
+  in SymbolTable [scopeMap] numLocals
+
+collectGlobals :: Stmt -> [String] -> [String]
+collectGlobals (Decl name _ _) acc = name : acc
+collectGlobals _ acc = acc
 
 -- A stack of scopes, where each scope maps a variable name to its stack index.
 -- The head of the list is the innermost scope.

@@ -8,6 +8,7 @@ module Semantic.SymbolTable
   , declare
   , addSymbol
   , lookupSymbol
+  , toList
 
     -- * Built-in game objects (player / enemy / npc)
   , isBuiltinObject
@@ -19,6 +20,9 @@ import Data.Map (Map)
 
 import Token (Position)
 import Semantic.ErrorLog (Type(..))
+
+toList :: SymbolTable -> [(String, SymbolInfo)]
+toList (SymbolTable ss) = concatMap Map.toList ss
 
 -- This module manages two distinct but related concerns:
 -- 1. A stack of lexical scopes for user-declared variables.
