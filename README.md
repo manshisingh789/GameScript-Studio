@@ -8,8 +8,6 @@ A custom scripting language and IDE for game development, built with Haskell. Th
 - Aurabhri Sharma
 - Manshi Singh
 
----
-
 ## Getting Started
 
 This project is built using the [Haskell Stack tool](https://docs.haskellstack.org/en/stable/README/). All commands should be run from the `lumenscript-studio` directory.
@@ -32,6 +30,16 @@ The project includes a test suite to verify the functionality of the lexer, pars
 
 ```bash
 stack test
+```
+
+### Running Demos
+
+To see the parser in action with example scripts, you can run the following commands:
+
+```bash
+stack run demos/dialogue_tree.lum
+stack run demos/enemy_ai.lum
+stack run demos/platformer.lum
 ```
 
 ---

@@ -15,13 +15,14 @@ library
                       , ParserTypes
                       , ParserExpressions
                       , HostBindings
+                      , Semantic
                       , Semantic.SymbolTable
                       , Semantic.ScopeResolution
                       , Semantic.TypeCheck
                       , Semantic.ErrorLog
                       , Bytecode.Instruction
                       , Bytecode.Generator
-                      ,Bytecode.SymbolTable
+                      , Bytecode.SymbolTable
                       , VM.VM
                       , VM.Stack
                       , VM.EventTrigger
@@ -32,6 +33,7 @@ library
                       , GUI.ASTViewer
                       , GUI.BytecodeViewer
                       , GUI.StackTraceViewer
+                      , Compiler
   build-depends:        base >= 4.7 && < 5
                       , text
                       , containers
@@ -62,6 +64,7 @@ test-suite lumenscript-studio-test
                       , BytecodeSpec
                       , VMSpec
                       , DemoSpec
+                      , CompilerSpec
   build-depends:        base
                       , lumenscript-studio
                       , hspec

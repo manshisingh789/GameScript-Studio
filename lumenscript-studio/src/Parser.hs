@@ -11,6 +11,7 @@ import Token
 import AST
 import ParserTypes
 import ParserExpressions (parseExpression)
+
 -- program = { statement } ;
 parseProgram :: [Token] -> ParseResult Program
 parseProgram ts = go (skipNewlines ts) []
@@ -20,7 +21,11 @@ parseProgram ts = go (skipNewlines ts) []
       Just t | tokenType t == TEOF -> pure (reverse acc, rest)
       _ -> do
         (stmt, rest') <- parseStatement rest
-        go (skipNewlines rest') (stmt:acc)
+        go (skipSemicolons (skipNewlines rest')) (stmt:acc)
+
+    skipSemicolons ts = case peek ts of
+      Just t | tokenType t == TSemicolon -> skipSemicolons (drop 1 ts)
+      _ -> ts
 -- statement = declaration | assignment | eventStatement | ifStatement | functionCall ;
 parseStatement :: [Token] -> ParseResult Stmt
 parseStatement [] = Left (ParseError "Unexpected end of input while parsing statement" eofPosition)
@@ -62,23 +67,26 @@ parseAssignmentOrExprStatement ts = do
         Var _ pos -> pure (Assign expr rhs pos, rest'')
         Member _ _ pos -> pure (Assign expr rhs pos, rest'')
         _ -> Left (ParseError "Invalid assignment target" (case ts of (t':_) -> tokenPosition t'; _ -> eofPosition))
-    _ ->
-      case expr of
-        Call {} -> pure (ExprStmt expr, rest)
-        _ -> Left (ParseError "Expression statement must be a function call" (case ts of (t':_) -> tokenPosition t'; _ -> eofPosition))
+    _ -> pure (ExprStmt expr, rest)
 -- ifStatement = "if" expression ":" block [ "else" ":" block ] ;
 parseIfStatement :: [Token] -> ParseResult Stmt
 parseIfStatement (kw:rest0)
   | tokenType kw == TKwIf = do
       (cond, rest1) <- parseExpression rest0
-      rest2 <- expect TColon rest1
-      (thenBlock, rest3) <- parseBlock rest2
-      case skipNewlines rest3 of
-        (elseTok:rest4) | tokenType elseTok == TKwElse -> do
-          rest5 <- expect TColon rest4
-          (elseBlock, rest6) <- parseBlock rest5
-          pure (If cond thenBlock (Just elseBlock) (tokenPosition kw), rest6)
-        _ -> pure (If cond thenBlock Nothing (tokenPosition kw), rest3)
+      (thenBlock, rest2) <- case peek rest1 of
+        Just t | tokenType t == TColon -> do
+          (block, rest) <- parseBlock (drop 1 rest1)
+          return (block, rest)
+        _ -> parseBlock rest1
+      case skipNewlines rest2 of
+        (elseTok:rest3) | tokenType elseTok == TKwElse -> do
+          (elseBlock, rest4) <- case peek rest3 of
+            Just t | tokenType t == TColon -> do
+              (block, rest) <- parseBlock (drop 1 rest3)
+              return (block, rest)
+            _ -> parseBlock rest3
+          pure (If cond thenBlock (Just elseBlock) (tokenPosition kw), rest4)
+        _ -> pure (If cond thenBlock Nothing (tokenPosition kw), rest2)
 parseIfStatement (t:_) = Left (ParseError "Expected 'if'" (tokenPosition t))
 parseIfStatement [] = Left (ParseError "Unexpected end of input" eofPosition)
 -- eventStatement = "on" "key_press" identifier ":" block ;
@@ -104,4 +112,8 @@ parseBlock ts = do
       Nothing -> Left (ParseError "Unterminated block: missing '}'" eofPosition)
       _ -> do
         (stmt, rest') <- parseStatement rest
-        go (skipNewlines rest') (stmt:acc)
+        go (skipSemicolons (skipNewlines rest')) (stmt:acc)
+
+    skipSemicolons ts = case peek ts of
+      Just t | tokenType t == TSemicolon -> skipSemicolons (drop 1 ts)
+      _ -> ts

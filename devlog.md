@@ -5,13 +5,19 @@ A chronological log of the project's development milestones.
 
 ### 12 August 2026
 
-- **Bytecode, Parser, and AST Enhancements**:
-  - **Bytecode**: Refactored the generator to a pure functional style, expanded the instruction set, and implemented `if` statement generation with full test coverage. Fixed a critical stack management bug.
-  - **Parser**: Now supports member expression assignments (e.g., `foo.bar = 1`), validated with new tests.
-  - **AST & Semantics**: Extended the AST with a `GenericEvent` constructor and added a test case for invalid l-value assignments.
+- **Compiler Pipeline**:
+  - Implemented and tested a new end-to-end compiler pipeline (`compiler.hs`) that integrates lexical analysis, parsing, and bytecode generation.
+- **Parser & Syntax Overhaul**:
+  - Enhanced syntax to support semicolons and flexible `if/else` block styles (colon or brace).
+  - Implemented member expression assignments (e.g., `foo.bar = 1`).
+- **Bytecode & AST**:
+  - Refactored the bytecode generator to a pure functional style, expanded the instruction set with `if` statement support, and fixed a stack management bug.
+  - Extended the AST with a `GenericEvent` constructor and added a test for invalid l-value assignments.
 
-  **Challenges:**
-  - **Architectural Shift**: Transitioning the bytecode generator from a stateful to a pure functional design required a significant refactoring effort but has resulted in a more robust and maintainable implementation.
+    **Challenges:**
+      - The transition to a pure functional bytecode generator was a significant refactoring effort that improved code quality.
+      - A critical semantic error in the test suite, caused by incorrect `let` keyword usage, was identified and resolved.
+      - Debugged and resolved a cascade of parser bugs, leading to a fully passing test suite.
 
 ### 11 August 2026
 

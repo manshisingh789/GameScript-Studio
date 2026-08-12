@@ -1,4 +1,12 @@
-module AST where
+module AST
+  ( Ident
+  , Expr(..)
+  , UnaryOp(..)
+  , BinOp(..)
+  , EventSpec(..)
+  , Stmt(..)
+  , Program
+  ) where
 
 import Token (Position)
 

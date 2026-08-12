@@ -1,5 +1,6 @@
 module Semantic.TypeCheck
   ( analyzeProgram
+  , typeCheckProgram
   , typeCheckStmts
   , typeCheckStmt
   , inferExpr
@@ -25,6 +26,9 @@ analyzeProgram prog = do
   -- building its own, more detailed, type-aware symbol table.
   _ <- typeCheckStmts scopedTable prog
   pure ()
+
+typeCheckProgram :: Program -> [SemanticError]
+typeCheckProgram prog = snd (runSemanticM (analyzeProgram prog))
 
 -- | Type-check a sequence of statements left-to-right, threading the
 -- (now type-aware) symbol table forward.

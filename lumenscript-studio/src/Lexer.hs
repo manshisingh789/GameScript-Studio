@@ -1,4 +1,4 @@
-module Lexer where
+module Lexer (lexer, scanNumber, scanIdentifier, scanString, scanOperator, scanSymbol, skipWhitespace) where
 
 import Data.Char (isDigit, isLetter)
 import Token
@@ -25,7 +25,7 @@ isOperator c = c `elem` "+-*/%=<>!"
 
 -- NOTE: semicolon removed from the symbol set
 isSymbol :: Char -> Bool
-isSymbol c = c `elem` "(){}[],.:"
+isSymbol c = c `elem` "(){}[],.:;"
 
 -- Scan an identifier or keyword
 scanIdentifier :: String -> Position -> LexResult
@@ -112,7 +112,7 @@ symbolMap = [
     ('{', TBraceL), ('}', TBraceR),
     ('[', TBracketL), (']', TBracketR),
     (',', TComma), ('.', TDot),
-    (':', TColon)
+    (':', TColon), (';', TSemicolon)
   ]
 
 -- Whitespace now includes '\n' so newlines are skipped rather than

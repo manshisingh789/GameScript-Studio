@@ -7,6 +7,7 @@ import qualified SemanticSpec
 import qualified BytecodeSpec
 import qualified VMSpec
 import qualified DemoSpec
+import qualified CompilerSpec
 
 main :: IO ()
 main = hspec $ do
@@ -16,4 +17,7 @@ main = hspec $ do
   ParserSpec.spec
   SemanticSpec.spec
   BytecodeSpec.spec
+  
+  CompilerSpec.spec -- Integration test for the whole pipeline
+
   VMSpec.spec
