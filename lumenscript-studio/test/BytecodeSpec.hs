@@ -24,6 +24,11 @@ spec = do
           expected = Right $ CompiledProgram [PUSH_INT 100, STORE_LOCAL 0, LOAD_LOCAL 0, PUSH_INT 10, OP Sub, STORE_LOCAL 0] []
       in generateBytecode ast `shouldBe` expected
 
+    it "handles member assignments" $
+      let ast = [Assign (Member (Var "player" dummyPos) "score" dummyPos) (LitInt 100) dummyPos]
+          expected = Right $ CompiledProgram [LOAD "player", PUSH_INT 100, STORE_MEMBER "score"] []
+      in generateBytecode ast `shouldBe` expected
+
     it "respects arithmetic precedence and pops result" $
       let ast = [ExprStmt (Binary Add (Binary Mul (LitInt 2) (LitInt 5) dummyPos) (LitInt 3) dummyPos)]
           expected = Right $ CompiledProgram [PUSH_INT 2, PUSH_INT 5, OP Mul, PUSH_INT 3, OP Add, POP] []
@@ -42,6 +47,11 @@ spec = do
     it "handles function calls with arguments and pops result" $
       let ast = [ExprStmt (Call (Var "dialogue" dummyPos) [LitStr "Hi"] dummyPos)]
           expected = Right $ CompiledProgram [PUSH_STR "Hi", LOAD "dialogue", CALL "dialogue" 1, POP] []
+      in generateBytecode ast `shouldBe` expected
+
+    it "handles function calls with multiple arguments and pops result" $
+      let ast = [ExprStmt (Call (Var "setPosition" dummyPos) [LitInt 10, LitInt 20] dummyPos)]
+          expected = Right $ CompiledProgram [PUSH_INT 10, PUSH_INT 20, LOAD "setPosition", CALL "setPosition" 2, POP] []
       in generateBytecode ast `shouldBe` expected
 
     it "generates correct labels for if statements" $

@@ -5,12 +5,10 @@ A chronological log of the project's development milestones.
 
 ### 12 August 2026
 
-- **Advanced Bytecode Implementation**: Made significant progress on the bytecode module, focusing on architectural improvements and feature expansion.
-  - **Expanded Instruction Set**: Added 12 new instructions to `Instruction.hs`, including `CALL`, `RET`, `HALT`, and instructions for stack manipulation (`POP`, `DUPLICATE`, `SWAP`) and data structures (`ARRAY_GET`/`SET`, `DICT_GET`/`SET`).
-  - **Refactored Bytecode Generator**: Reworked the generator to use a pure functional style with an explicit symbol table, which now uses more efficient stack indices for local variables.
-  - **Modular Symbol Table**: Extracted the symbol table into its own dedicated module (`Bytecode/SymbolTable.hs`) to improve code structure and separate concerns.
-  - **Corrected Stack Management**: Fixed a runtime issue by adding a `POP` instruction after an `ExprStmt` in the `generateStmt` function (`Bytecode/Generator.hs`). This prevents stack overflow by ensuring expression statement results are correctly discarded.
-  - **Updated Bytecode Tests**: Aligned the bytecode test suite (`BytecodeSpec.hs`) with the stack management fix, updating all relevant tests to expect the new `POP` instruction.
+- **Bytecode, Parser, and AST Enhancements**:
+  - **Bytecode**: Refactored the generator to a pure functional style, expanded the instruction set, and implemented `if` statement generation with full test coverage. Fixed a critical stack management bug.
+  - **Parser**: Now supports member expression assignments (e.g., `foo.bar = 1`), validated with new tests.
+  - **AST & Semantics**: Extended the AST with a `GenericEvent` constructor and added a test case for invalid l-value assignments.
 
   **Challenges:**
   - **Architectural Shift**: Transitioning the bytecode generator from a stateful to a pure functional design required a significant refactoring effort but has resulted in a more robust and maintainable implementation.

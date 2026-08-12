@@ -151,10 +151,10 @@ generateExpr st (Binary op left right _) = do
   Right (st'', OP op : rightInstrs ++ leftInstrs)
 
 generateExpr st (Call callee args _) = do
-  (stAfterCallee, calleeInstrs) <- generateExpr st callee
-  (stAfterArgs, argsInstrs) <- generateExprs stAfterCallee args
+  (stAfterArgs, argsInstrs) <- generateExprs st args
+  (stAfterCallee, calleeInstrs) <- generateExpr stAfterArgs callee
   let callInstr = CALL (calleeLabel callee) (length args)
-  Right (stAfterArgs, callInstr : calleeInstrs ++ argsInstrs)
+  Right (stAfterCallee, callInstr : calleeInstrs ++ argsInstrs)
 
 generateExpr st (Member obj field _) = do
     (st', objInstrs) <- generateExpr st obj
@@ -162,6 +162,9 @@ generateExpr st (Member obj field _) = do
 
 -- | Generate instructions for a list of expressions.
 generateExprs :: GeneratorState -> [Expr] -> Either BytecodeError (GeneratorState, [Instr])
+-- We want to evaluate arguments from left-to-right. Since we are building a
+-- reversed list of instructions, we should process the argument expressions
+-- from left-to-right, prepending the generated instructions each time.
 generateExprs st exprs = foldM (\(s, acc) e -> do (s', i) <- generateExpr s e; Right (s', i ++ acc)) (st, []) exprs
 
 -- | Create a new, unique label.
