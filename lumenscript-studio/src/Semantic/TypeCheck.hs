@@ -5,7 +5,7 @@ module Semantic.TypeCheck
   , inferExpr
   ) where
 
-import Control.Monad (foldM, when)
+import Control.Monad (foldM, when, unless)
 
 import AST
 import Token (Position)
@@ -37,19 +37,23 @@ typeCheckStmt st (Decl name rhs pos) = do
   ty <- inferExpr st rhs
   pure (addSymbol name ty pos st)
 
-typeCheckStmt st (Assign name rhs pos) = do
+typeCheckStmt st (Assign lhs rhs pos) = do
+  unless (isLValue lhs) $ logError (InvalidAssignmentTarget pos)
   actualTy <- inferExpr st rhs
   -- The use of `case` to handle a `Maybe` value is idiomatic Haskell.
   -- It allows for clear and exhaustive handling of both `Nothing` and `Just`.
-  case lookupSymbol name st of
+  case targetExprToSymbolName lhs of
     Nothing -> pure st -- Undefined variable already reported by ScopeResolution pass.
-    Just info -> do
-      let expectedTy = symbolType info
-      -- Only report a mismatch if both types are known and different.
-      let shouldReportError = expectedTy /= actualTy && expectedTy /= TUnknown && actualTy /= TUnknown
-      when shouldReportError $
-        logError (AssignmentTypeMismatch name expectedTy actualTy pos)
-      pure st
+    Just name -> do
+      case lookupSymbol name st of
+        Nothing -> pure st -- Undefined variable already reported by ScopeResolution pass.
+        Just info -> do
+          let expectedTy = symbolType info
+          -- Only report a mismatch if both types are known and different.
+          let shouldReportError = expectedTy /= actualTy && expectedTy /= TUnknown && actualTy /= TUnknown
+          when shouldReportError $
+            logError (AssignmentTypeMismatch name expectedTy actualTy pos)
+          pure st
 
 typeCheckStmt st (ExprStmt e) = do
   _ <- inferExpr st e
@@ -207,3 +211,13 @@ exprPos (Unary _ _ p)   = Just p
 -- | exprPos with a fallback position for literals, which have none of their own.
 exprPosOr :: Position -> Expr -> Position
 exprPosOr fallback e = maybe fallback id (exprPos e)
+
+isLValue :: Expr -> Bool
+isLValue (Var _ _) = True
+isLValue (Member _ _ _) = True
+isLValue _ = False
+
+targetExprToSymbolName :: Expr -> Maybe String
+targetExprToSymbolName (Var name _) = Just name
+targetExprToSymbolName (Member _ name _) = Just name
+targetExprToSymbolName _ = Nothing

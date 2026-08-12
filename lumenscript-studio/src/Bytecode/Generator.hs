@@ -64,13 +64,21 @@ generateStmt st (Decl name expr _) = do
     , symbolTable  = newSymbolTable
     }
 
-generateStmt st (Assign name expr _) = do
+generateStmt st (Assign lhs expr _) = do
   (st', exprInstrs) <- generateExpr st expr
-  case ST.resolve name (symbolTable st') of
-    Just index ->
-      let newInstructions = STORE_LOCAL index : exprInstrs
-      in Right $ st' { instructions = newInstructions ++ instructions st' }
-    Nothing -> Left (UnboundVariable name)
+  case lhs of
+    Var name _ ->
+      case ST.resolve name (symbolTable st') of
+        Just index ->
+          let newInstructions = STORE_LOCAL index : exprInstrs
+          in Right $ st' { instructions = newInstructions ++ instructions st' }
+        Nothing -> Left (UnboundVariable name)
+    Member obj field _ -> do
+        (st'', objInstrs) <- generateExpr st' obj
+        let newInstructions = STORE_MEMBER field : exprInstrs ++ objInstrs
+        Right $ st'' { instructions = newInstructions ++ instructions st'' }
+    -- isLValue check in semantic analysis should prevent other cases.
+    _ -> Right st'
 
 generateStmt st (If cond thenBlock mElseBlock _) = do
   (stAfterCond, condInstrs) <- generateExpr st cond
@@ -97,7 +105,7 @@ generateStmt st (If cond thenBlock mElseBlock _) = do
       stAfterThenBody <- generateStmts stForThen thenBlock
       let thenInstrs = instructions stAfterThenBody
 
-      let stForElse = stAfterThenBody { instructions = [], symbolTable = ST.enterScope (symbolTable stWithEndLabel) }
+      let stForElse = stWithEndLabel { instructions = [], symbolTable = ST.enterScope (symbolTable stWithEndLabel), labelCount = labelCount stAfterThenBody }
       stAfterElseBody <- generateStmts stForElse elseBlock'
       let elseInstrs = instructions stAfterElseBody
 
@@ -106,7 +114,8 @@ generateStmt st (If cond thenBlock mElseBlock _) = do
       let finalInstructions =
             [LABEL endLabel] ++
             elseInstrs ++
-            [JUMP endLabel, LABEL elseLabel] ++
+            [LABEL elseLabel] ++
+            [JUMP endLabel] ++
             thenInstrs ++
             [JUMP_IF_FALSE elseLabel] ++
             condInstrs

@@ -98,7 +98,16 @@ spec = do
                  , tok TMinus, tok (TInt 10), tok TEOF
                  ]
       parseStatement toks
-        `shouldBe` Right (Assign "health" (Binary Sub (Var "health" p) (LitInt 10) p) p, [tok TEOF])
+        `shouldBe` Right (Assign (Var "health" p) (Binary Sub (Var "health" p) (LitInt 10) p) p, [tok TEOF])
+
+    it "parses an assignment to a member" $ do
+      let toks = [ tok (TIdent "player"), tok TDot, tok (TIdent "health")
+                 , tok TAssign, tok (TInt 100), tok TEOF
+                 ]
+      let lhs = Member (Var "player" p) "health" p
+      let rhs = LitInt 100
+      parseStatement toks
+        `shouldBe` Right (Assign lhs rhs p, [tok TEOF])
 
     it "parses a bare function-call statement" $ do
       let toks = [ tok (TIdent "player"), tok TDot, tok (TIdent "jump")

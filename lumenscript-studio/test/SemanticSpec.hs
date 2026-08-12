@@ -437,10 +437,19 @@ spec = do
             [ InvalidOperandType "<" TString p
             ]
 
+      it "reports an error when assigning to a non-lvalue" $ do
+        let program =
+              [ Assign (LitInt 1) (LitInt 2) p
+              ]
+        analyze program
+          `shouldBe`
+            [ InvalidAssignmentTarget p
+            ]
+
       it "reports assignment type mismatch" $ do
         let program =
               [ Decl "x" (LitInt 10) p
-              , Assign "x" (LitStr "hello") p2
+              , Assign (Var "x" p2) (LitStr "hello") p2
               ]
         analyze program
           `shouldBe`
@@ -454,7 +463,7 @@ spec = do
       it "allows assignment when the type matches" $ do
         let program =
               [ Decl "x" (LitInt 10) p
-              , Assign "x" (LitInt 20) p2
+              , Assign (Var "x" p2) (LitInt 20) p2
               ]
         analyze program `shouldSatisfy` semanticOk
 
@@ -476,7 +485,7 @@ spec = do
         let program =
               [ Decl "x" (LitInt 10) p
               , If (LitBool True)
-                  [ Assign "x" (LitStr "hello") p2
+                  [ Assign (Var "x" p2) (LitStr "hello") p2
                   ]
                   Nothing
                   p
@@ -538,6 +547,6 @@ spec = do
       it "marks semantic analysis as passed when no errors exist" $ do
         let program =
               [ Decl "x" (LitInt 10) p
-              , Assign "x" (LitInt 20) p2
+              , Assign (Var "x" p2) (LitInt 20) p2
               ]
         analyze program `shouldSatisfy` semanticOk

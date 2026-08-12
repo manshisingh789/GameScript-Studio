@@ -39,12 +39,10 @@ resolveStmt st (Decl name rhs pos) = do
       pure st                 -- keep the original binding; don't let a
                                -- bad redeclaration corrupt later lookups
     Right st' -> pure st'
-resolveStmt st (Assign name rhs pos) = do
+resolveStmt st (Assign lhs rhs pos) = do
+  resolveExpr st lhs
   resolveExpr st rhs
-  case lookupSymbol name st of
-    Just _  -> pure ()
-    Nothing -> logError (UndefinedVariable name pos)
-    -- Note: assigning to a built-in object name (e.g. "player = 5") is
+  pure st -- Note: assigning to a built-in object name (e.g. "player = 5") is
     -- also caught here, since built-ins are never in the variable
     -- table -- it just currently reads as "undefined variable" rather
     -- than a more specific "player is not assignable" message.

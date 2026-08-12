@@ -59,6 +59,7 @@ data SemanticError
   | ArityMismatch         { errName :: String, expectedArgs :: Int, actualArgs :: Int, errPos :: Position }
   | InvalidOperandType    { operator :: String, operandTy :: Type, errPos :: Position }
   | InvalidCondition      { actualTy :: Type, errPos :: Position }
+  | InvalidAssignmentTarget { errPos :: Position }
   | AssignmentTypeMismatch{ errName :: String, declaredTy :: Type, assignedTy :: Type, errPos :: Position }
   -- A generic warning for non-fatal issues, like unused variables.
   | GenericWarning        { message :: String, errPos :: Position }
@@ -87,6 +88,8 @@ renderError (InvalidOperandType op ty pos) =
   at pos ++ "operator '" ++ op ++ "' cannot be applied to " ++ show ty
 renderError (InvalidCondition ty pos) =
   at pos ++ "condition must be bool, got " ++ show ty
+renderError (InvalidAssignmentTarget pos) =
+  at pos ++ "invalid assignment target"
 renderError (AssignmentTypeMismatch name declared assigned pos) =
   at pos ++ "cannot assign " ++ show assigned ++ " to '" ++ name ++ "' declared as " ++ show declared
 renderError (GenericWarning msg pos) =

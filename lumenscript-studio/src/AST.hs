@@ -2,41 +2,49 @@ module AST where
 
 import Token (Position)
 
+-- | An identifier, typically a variable or function name.
 type Ident = String
 
--- ===== Expressions (Person A) =====
-
+-- | Represents an expression in the LumenScript language.
 data Expr
-  = LitInt Int
-  | LitStr String
-  | LitBool Bool
-  | Var Ident Position               -- x                 (position of the identifier)
-  | Member Expr Ident Position       -- player.distance  ->  Member (Var "player" p1) "distance" p2
-  | Unary UnaryOp Expr Position      -- -x, !flag         (position of the operator)
-  | Binary BinOp Expr Expr Position  -- a + b, x <= y     (position of the operator)
-  | Call Expr [Expr] Position        -- player.jump(1, 2) -> Call (Member (Var "player" p1) "jump" p2) [..] p3
-  deriving (Show, Eq)                -- (position of the opening paren -- the call site itself)
-
-data UnaryOp = Neg | Not
+  = LitInt Int                       -- ^ An integer literal, e.g., `42`.
+  | LitStr String                    -- ^ A string literal, e.g., `"hello"`.
+  | LitBool Bool                     -- ^ A boolean literal, e.g., `true`.
+  | Var Ident Position               -- ^ A variable reference, e.g., `x`. Stores the identifier's position.
+  | Member Expr Ident Position       -- ^ An object member access, e.g., `obj.field`. Stores the member's position.
+  | Unary UnaryOp Expr Position      -- ^ A unary operation, e.g., `-x` or `!flag`. Stores the operator's position.
+  | Binary BinOp Expr Expr Position  -- ^ A binary operation, e.g., `a + b`. Stores the operator's position.
+  | Call Expr [Expr] Position        -- ^ A function call, e.g., `func(a, b)`. Stores the position of the opening parenthesis.
   deriving (Show, Eq)
 
+-- | Unary operators.
+data UnaryOp
+  = Neg -- ^ Negation, e.g., `-x`.
+  | Not -- ^ Logical not, e.g., `!flag`.
+  deriving (Show, Eq)
+
+-- | Binary operators.
 data BinOp
-  = Add | Sub | Mul | Div | Mod
-  | Eq | NotEq | Lt | Gt | Le | Ge
+  = Add | Sub | Mul | Div | Mod    -- ^ Arithmetic operators: +, -, *, /, %
+  | Eq | NotEq | Lt | Gt | Le | Ge -- ^ Comparison operators: ==, !=, <, >, <=, >=
+  | And | Or                       -- ^ Logical operators: &&, ||
   deriving (Show, Eq)
 
--- ===== Statements (Person B) =====
-
-data EventSpec = KeyPress Ident      -- key_press SPACE
+-- | Specifies the type of event for an `OnEvent` block.
+-- Made a generic EventSpec if we decided to add more event types (future scope)
+data EventSpec
+  = KeyPress Ident -- ^ A key press event, e.g., `on key_press SPACE:`.
+  | GenericEvent Ident [Ident] -- or EventName + parameters
   deriving (Show, Eq)
 
+-- | Represents a statement in the LumenScript language.
 data Stmt
-  = Decl Ident Expr Position           -- let x = expr        (position of x)
-  | Assign Ident Expr Position         -- x = expr            (position of x)
-  | ExprStmt Expr                      -- player.jump()  (bare call as a statement -- position lives on the inner Call)
-  | If Expr [Stmt] (Maybe [Stmt]) Position -- if cond: { ... } [else: { ... }] (position of 'if' -- a fallback for
-                                            -- when cond is a bare literal, which carries no position of its own)
-  | OnEvent EventSpec [Stmt] Position  -- on key_press SPACE: { ... } (position of the 'on' keyword -- the binding site)
+  = Decl Ident Expr Position           -- ^ A variable declaration, e.g., `let x = 10;`. Stores the variable's position.
+  | Assign Expr Expr Position         -- ^ An assignment to a variable, e.g., `x = 20;`. Stores the variable's position.
+  | ExprStmt Expr                      -- ^ An expression used as a statement, typically a function call for its side effects.
+  | If Expr [Stmt] (Maybe [Stmt]) Position -- ^ An if-else statement. Stores the position of the 'if' keyword.
+  | OnEvent EventSpec [Stmt] Position  -- ^ An event handler block, e.g., `on key_press SPACE: { ... }`. Stores the position of the 'on' keyword.
   deriving (Show, Eq)
 
+-- | A program is a list of statements.
 type Program = [Stmt]

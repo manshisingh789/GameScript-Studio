@@ -53,16 +53,19 @@ parseDeclaration [] = Left (ParseError "Unexpected end of input" eofPosition)
 -- the grammar, statement's only expression-shaped alternative is
 -- functionCall, not bare expressions like "x + 1" on their own line).
 parseAssignmentOrExprStatement :: [Token] -> ParseResult Stmt
-parseAssignmentOrExprStatement (idTok:eqTok:rest)
-  | TIdent name <- tokenType idTok
-  , tokenType eqTok == TAssign = do
-      (rhs, rest') <- parseExpression rest
-      pure (Assign name rhs (tokenPosition idTok), rest')
 parseAssignmentOrExprStatement ts = do
   (expr, rest) <- parseExpression ts
-  case expr of
-    Call {} -> pure (ExprStmt expr, rest)
-    _ -> Left (ParseError "Expression statement must be a function call" eofPosition)
+  case rest of
+    (t:rest') | tokenType t == TAssign -> do
+      (rhs, rest'') <- parseExpression rest'
+      case expr of
+        Var _ pos -> pure (Assign expr rhs pos, rest'')
+        Member _ _ pos -> pure (Assign expr rhs pos, rest'')
+        _ -> Left (ParseError "Invalid assignment target" (case ts of (t':_) -> tokenPosition t'; _ -> eofPosition))
+    _ ->
+      case expr of
+        Call {} -> pure (ExprStmt expr, rest)
+        _ -> Left (ParseError "Expression statement must be a function call" (case ts of (t':_) -> tokenPosition t'; _ -> eofPosition))
 -- ifStatement = "if" expression ":" block [ "else" ":" block ] ;
 parseIfStatement :: [Token] -> ParseResult Stmt
 parseIfStatement (kw:rest0)
