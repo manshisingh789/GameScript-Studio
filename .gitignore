@@ -1,6 +1,8 @@
 # DO NOT REMOVE existing ignored files
 
-/documentation-arpita
+# VS Code
+.vscode/
+.vs/
 
 # Stack build artifacts
 .stack-work/

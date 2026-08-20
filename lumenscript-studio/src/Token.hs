@@ -8,7 +8,7 @@ data TokenPayload
   | TString String
   | TBool Bool
   | TIdent String
-  | TDot | TComma | TColon
+  | TDot | TComma | TColon | TSemicolon
   | TLParen | TRParen | TBraceL | TBraceR | TBracketL | TBracketR
   | TAssign
   | TPlus | TMinus | TMultiply | TDivide | TMod

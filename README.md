@@ -32,16 +32,31 @@ The project includes a test suite to verify the functionality of the lexer, pars
 stack test
 ```
 
+### Running Demos
+
+To see the parser in action with example scripts, you can run the following commands:
+
+```bash
+stack run lumenscript-studio-exe -- demos/dialogue_tree.lum
+stack run lumenscript-studio-exe -- demos/enemy_ai.lum
+stack run lumenscript-studio-exe -- demos/platformer.lum
+```
+
 ---
 
 ## Project Structure
 
-A brief overview of the key directories in this project:
-
-- `src/`: Contains the core source code for the language (Lexer, Parser, etc.).
-- `test/`: Contains the test suites for all components.
-- `demos/`: Contains example `.lum` scripts demonstrating language features.
-- `lumenscript-studio.cabal`: The main package definition file.
+- `src/`: Contains the core source code for the language
+  - `Lexer/`: Handles tokenization.
+  - `Parser/`: Builds the Abstract Syntax Tree (AST).
+  - `Semantic/`: Performs type checking and validation.
+  - `Bytecode/`: Bytecode generation module (in progress)
+  - `GUI/`: IDE components
+  - `Simulation/`: Game simulation logic
+  - `VM/`: Virtual machine implementation (not started)
+- `test/`: Contains the test suites for all components
+- `demos/`: Example `.lum` scripts demonstrating language features
+- `lumenscript-studio.cabal`: The main package definition file
 
 ---
 
@@ -64,10 +79,16 @@ on collision "player" "coin": score = score + 10
 ## Project Roadmap
 
 - [x] **Lexer**: Tokenizes the source code. (Complete and documented)
-- [ ] **Parser**: Builds an Abstract Syntax Tree (AST) from tokens.
-- [ ] **Semantic Analysis**: Performs type checking and validation.
-- [ ] **Bytecode Compiler**: Compiles the AST to an intermediate representation.
+  - Complete (lexer-v1.0-beta)
+- [x] **Parser**: Builds an Abstract Syntax Tree (AST) from tokens.
+  - Complete (parser-v1.0-beta)
+- [x] **Semantic Analysis**: Performs type checking and validation.
+  - Complete with 124 passing tests (semantic-v1.0-beta)
+- [x] **Bytecode Compiler**: Compiles the AST to an intermediate representation.
+  - **Status**: Complete (compiler-v1.0-beta).
+  - **Details**: The end-to-end compiler pipeline is complete, integrating the lexer, parser, semantic analysis, and bytecode generation. All tests pass and demo scripts compile successfully.
 - [ ] **Virtual Machine (VM)**: Executes the compiled bytecode.
+  - Not started yet
 
 ---
 
