@@ -20,4 +20,4 @@ main = do
                     putStrLn "Parse Error:"
                     print err
         _ ->
-            putStrLn "Usage: cabal run <script.lum>"
+            putStrLn "Usage: stack run <script.lum>"
