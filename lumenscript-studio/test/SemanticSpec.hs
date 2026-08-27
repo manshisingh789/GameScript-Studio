@@ -4,6 +4,7 @@ import Test.Hspec
 
 import AST
 import Token hiding (TString, TInt)
+import Semantic (analyzeProgram, SemanticResult(..)) 
 import Semantic.ErrorLog
 import Semantic.TypeCheck
 

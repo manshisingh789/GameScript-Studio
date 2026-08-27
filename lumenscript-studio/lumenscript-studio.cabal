@@ -15,6 +15,7 @@ library
                       , ParserTypes
                       , ParserExpressions
                       , HostBindings
+                      , Semantic
                       , Semantic.SymbolTable
                       , Semantic.ScopeResolution
                       , Semantic.TypeCheck
@@ -64,4 +65,5 @@ test-suite lumenscript-studio-test
   build-depends:        base
                       , lumenscript-studio
                       , hspec
+                      , containers
   default-language:    Haskell2010
