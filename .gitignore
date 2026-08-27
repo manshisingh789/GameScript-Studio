@@ -1,5 +1,9 @@
 # DO NOT REMOVE existing ignored files
 
+# VS Code
+.vscode/
+.vs/
+
 # Stack build artifacts
 .stack-work/
 
