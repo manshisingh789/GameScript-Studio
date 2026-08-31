@@ -1,8 +1,7 @@
 module Semantic
-( analyzeProgram
-, SemanticResult(..)
-, SymbolTable
-) where
+  ( analyzeProgram
+  , SemanticResult(..)
+  ) where
 
 import AST (Program)
 import Semantic.ErrorLog (SemanticError)

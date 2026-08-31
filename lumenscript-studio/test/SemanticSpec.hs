@@ -5,9 +5,10 @@ import Test.Hspec
 
 -- Internal Imports
 import AST
-import Semantic.ErrorLog (SemanticError(..), Type(..), runSemanticM, semanticOk, hasFatalErrors)
-import Semantic.TypeCheck (analyzeProgram)
-import Token hiding (TInt, TString)
+import Token hiding (TString, TInt)
+import Semantic (analyzeProgram, SemanticResult(..))
+import Semantic.ErrorLog
+import Semantic.TypeCheck
 
 
 -- Test Helpers
