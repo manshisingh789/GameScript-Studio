@@ -8,7 +8,6 @@ import AST
 import Token hiding (TString, TInt)
 import Semantic (analyzeProgram, SemanticResult(..))
 import Semantic.ErrorLog
-import Semantic.TypeCheck
 
 
 -- Test Helpers
@@ -22,9 +21,13 @@ p2 = Position 2 1
 p3 :: Position
 p3 = Position 3 1
 
--- Helper function to run semantic analysis on a program
+-- Helper function to run semantic analysis on a program.
+--
+-- `analyzeProgram` (from Semantic) returns a `SemanticResult` directly —
+-- it is not a `SemanticM` action, so there's no `runSemanticM` to run.
+-- We just pull the error list straight out of the result record.
 analyze :: Program -> [SemanticError]
-analyze program = snd $ runSemanticM (analyzeProgram program)
+analyze program = semanticErrors (analyzeProgram program)
 
 
 -- Test Data

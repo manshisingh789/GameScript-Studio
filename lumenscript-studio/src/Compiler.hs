@@ -8,7 +8,7 @@ import qualified Parser
 import qualified Semantic
 import qualified Bytecode.Generator as Generator
 import AST (Program)
-import Bytecode.Instruction (CompiledProgram)
+import VM.EventTrigger (CompiledProgram(..))
 import Semantic (SemanticResult(..))
 import Semantic.ErrorLog (SemanticError)
 

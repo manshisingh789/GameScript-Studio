@@ -8,16 +8,21 @@ import qualified BytecodeSpec
 import qualified VMSpec
 import qualified DemoSpec
 import qualified CompilerSpec
+import qualified GridWorldSpec
+import qualified SimStateSpec
 
 main :: IO ()
 main = hspec $ do
   LexerSpec.spec
   DemoSpec.spec
-  
+
   ParserSpec.spec
   SemanticSpec.spec
   BytecodeSpec.spec
-  
+
   CompilerSpec.spec -- Integration test for the whole pipeline
 
   VMSpec.spec
+
+  GridWorldSpec.spec
+  SimStateSpec.spec

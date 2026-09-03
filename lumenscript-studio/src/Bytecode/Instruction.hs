@@ -2,10 +2,8 @@ module Bytecode.Instruction where
 
 import AST (Ident, BinOp, UnaryOp)
 
--- | A label is a string that marks a position in the bytecode.
 type Label = String
 
--- | Represents a single bytecode instruction for the LumenScript VM.
 data Instr
   = PUSH_INT Int
   | PUSH_STR String

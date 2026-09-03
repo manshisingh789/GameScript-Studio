@@ -9,7 +9,7 @@ module Simulation.SimState
 import Data.IORef
 import qualified Data.Map as Map
 
-import AST (Ident, EventSpec)
+import AST (EventSpec)
 import VM.VM (HostEnv(..), VarEnv, runEvent)
 import VM.EventTrigger (CompiledProgram)
 import VM.Stack (Value(..))

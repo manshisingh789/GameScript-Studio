@@ -27,8 +27,26 @@ analyzeProgram prog = do
   _ <- typeCheckStmts scopedTable prog
   pure ()
 
+-- | Run only the type-checking pass, returning just the type-related
+-- errors.
+--
+-- NOTE: this deliberately does NOT reuse 'analyzeProgram' above.
+-- 'analyzeProgram' runs 'resolveStmts' and 'typeCheckStmts' inside the
+-- *same* SemanticM error log, so its result also contains a full copy
+-- of every scope-resolution error (UndefinedVariable,
+-- DuplicateDeclaration, UndefinedMember, ArityMismatch). Since
+-- 'Semantic.hs' already collects those from 'resolveProgram'
+-- separately and concatenates them with this function's result,
+-- reusing 'analyzeProgram' here would double-report every scope error.
+--
+-- Instead, we run 'resolveStmts' in its own throwaway SemanticM pass
+-- purely to reconstruct the type-aware symbol table shape, discard
+-- *its* errors, and then run 'typeCheckStmts' in a fresh SemanticM
+-- pass so only genuine type errors are returned.
 typeCheckProgram :: Program -> [SemanticError]
-typeCheckProgram prog = snd (runSemanticM (analyzeProgram prog))
+typeCheckProgram prog =
+  let scopedTable = fst (runSemanticM (resolveStmts emptyTable prog))
+  in snd (runSemanticM (typeCheckStmts scopedTable prog))
 
 -- | Type-check a sequence of statements left-to-right, threading the
 -- (now type-aware) symbol table forward.

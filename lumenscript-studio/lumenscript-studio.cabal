@@ -65,6 +65,8 @@ test-suite lumenscript-studio-test
                       , VMSpec
                       , DemoSpec
                       , CompilerSpec
+                      , GridWorldSpec
+                      , SimStateSpec
   build-depends:        base
                       , lumenscript-studio
                       , hspec
