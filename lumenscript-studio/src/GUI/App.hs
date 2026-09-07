@@ -7,9 +7,7 @@ import qualified Data.Map as Map
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
-import Compiler (compile, CompilationResult(..))
-import Lexer (lexer)
-import Parser (parseProgram)
+import Compiler (CompilationResult(..), PipelineStages(..), compileStages)
 import VM.EventTrigger (CompiledProgram(..))
 import Simulation.SimState
 
@@ -41,51 +39,47 @@ simHeight = 8
 
 -- | Launch the GUI: builds the editor and all four viewer panels,
 -- lays them out on the page, and wires the "Compile" button to run
--- the real pipeline end to end.
+-- the full real pipeline exactly once per click via
+-- Compiler.compileStages -- Editor -> Lexer -> Parser -> Semantic
+-- Analyzer -> Bytecode Generator -> VM -> Simulation -> these panels,
+-- with no stage re-run or duplicated.
 --
--- All four viewer panels reflect real data after a compile:
---
---   * Tokens   -- the real output of Lexer.lexer on the editor's text.
---   * AST      -- the real output of Parser.parseProgram on those
---                tokens (shown independently of whether the later
---                semantic/bytecode stages succeed, so you can see the
---                AST even when Compiler.compile reports a semantic
---                error).
---   * Bytecode -- Compiler.compile's real compiled output, rendered
---                one handler and one instruction per line via
---                GUI.BytecodeViewer.formatCompiledProgram (rather than
---                CompiledProgram's derived Show, which would render
---                the whole record -- including every instruction --
---                as a single unreadable line).
+--   * Tokens      -- psTokens from compileStages: the real output of
+--                    Lexer.lexer.
+--   * AST         -- psParse from compileStages: the real output of
+--                    Parser.parseProgram, shown independently of
+--                    whether the later semantic/bytecode stages
+--                    succeed, so you can see the AST even when
+--                    semantic analysis reports an error.
+--   * Bytecode    -- psResult's CompilationSuccess payload: real
+--                    Bytecode.Generator output, rendered one handler
+--                    and one instruction per line via
+--                    GUI.BytecodeViewer.formatCompiledProgram. Cleared
+--                    to a "no bytecode" message on a semantic or parse
+--                    failure, rather than continuing to show whatever
+--                    the previous successful compile produced.
 --   * Stack Trace -- every event handler registered in the compiled
---                program is actually run once, in order, through
---                Simulation.SimState against a real HostEnv/GridWorld.
---                The panel shows the real final variables and the
---                real LOAD/CALL trace collected along the way. This
---                is a post-run summary, not a live single-instruction
---                stepper -- VM.VM doesn't currently export the
---                per-instruction primitives (`step`, `findLabelIndex`,
---                `handlerEnd`) that a "Step" button would need; those
---                would need to be added to VM.VM's export list first.
+--                    program is actually run once, in order, through
+--                    Simulation.SimState against a real
+--                    HostEnv/GridWorld (real VM.VM.runEvent
+--                    underneath). The panel shows the real final
+--                    variables and the real LOAD/CALL trace. This is
+--                    a post-run summary, not a live
+--                    single-instruction stepper -- VM.VM doesn't
+--                    currently export the per-instruction primitives
+--                    (`step`, `findLabelIndex`, `handlerEnd`) that a
+--                    "Step" button would need.
 --
--- Note: this calls Lexer.lexer and Parser.parseProgram directly, in
--- addition to Compiler.compile (which almost certainly calls the same
--- two functions internally). That's a small amount of duplicated
--- work, accepted here because Compiler.hs doesn't currently expose
--- its intermediate token stream or parsed AST on success -- only the
--- final CompiledProgram or an error. Both functions are pure, so
--- calling them twice is harmless beyond the minor recomputation.
---
--- Persistence: 'savedSourceRef' is created exactly once, right here,
--- before 'startGUI' is called -- not inside 'setup'. Threepenny calls
--- 'setup' fresh for every page load/refresh (each one is a new
--- session), so anything created inside 'setup' resets every time. By
--- creating the IORef outside it and capturing it in the closure passed
--- to 'startGUI', every session shares the same reference, so a refresh
+-- Persistence: 'savedSourceRef' is created exactly once, before
+-- 'startGUI' is called -- not inside 'setup'. Threepenny calls 'setup'
+-- fresh for every page load/refresh (each one is a new session), so
+-- anything created inside 'setup' resets every time. By creating the
+-- IORef outside it and capturing it in the closure passed to
+-- 'startGUI', every session shares the same reference, so a refresh
 -- reopens with whatever you last typed instead of snapping back to
 -- 'demoSource'. This only lasts as long as the server process itself
--- keeps running -- stopping and relaunching `--gui` still starts fresh,
--- since nothing is written to disk.
+-- keeps running -- stopping and relaunching `--gui` still starts
+-- fresh, since nothing is written to disk.
 runGui :: IO ()
 runGui = do
   savedSourceRef <- newIORef demoSource
@@ -124,22 +118,19 @@ setup savedSourceRef window = do
     source <- get UI.value (epSourceArea editor)
     liftIO $ writeIORef savedSourceRef source
 
-    -- Tokens: always real. Lexing can't fail outright -- bad
-    -- characters just turn into TError tokens in the stream -- so
-    -- there's no error case to handle here.
-    let tokens = lexer source
-    updateTokenViewer tokenViewer (map show tokens)
+    -- One pipeline run drives every panel below -- no separate
+    -- Lexer/Parser calls, no duplicated work.
+    let stages = compileStages source
 
-    -- AST: real parse of those same tokens, shown independently of
-    -- Compiler.compile's result below. If parsing fails, show the
-    -- real parse error instead of a stale/dummy AST.
-    case parseProgram tokens of
+    updateTokenViewer tokenViewer (map show (psTokens stages))
+
+    case psParse stages of
       Right (program, _leftoverTokens) ->
         updateASTViewer astViewer (map show program)
       Left parseErr ->
         updateASTViewer astViewer ["Parse failed: " ++ show parseErr]
 
-    case compile source of
+    case psResult stages of
       CompilationSuccess compiledProgram -> do
         void $ element (epStatus editor) # set UI.text "Compiled successfully."
         updateBytecodeViewer bytecodeViewer (formatCompiledProgram compiledProgram)
@@ -149,12 +140,16 @@ setup savedSourceRef window = do
       SemanticErrors errs -> do
         void $ element (epStatus editor) # set UI.text
           ("Semantic errors:\n" ++ unlines (map show errs))
+        updateBytecodeViewer bytecodeViewer
+          ["(compile failed -- no bytecode)"]
         updateStackTraceViewer stackTraceViewer
           ["(compile failed -- nothing to run)"]
 
       ParseError err -> do
         void $ element (epStatus editor) # set UI.text
-          ("Parse error: " ++ show err)
+          ("Parse error: " ++ err)
+        updateBytecodeViewer bytecodeViewer
+          ["(compile failed -- no bytecode)"]
         updateStackTraceViewer stackTraceViewer
           ["(compile failed -- nothing to run)"]
 

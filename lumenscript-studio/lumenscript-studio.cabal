@@ -70,6 +70,7 @@ test-suite lumenscript-studio-test
                       , GridWorldSpec
                       , SimStateSpec
                       , GUIPanelSpec
+                      , CompilerStagesSpec
   build-depends:        base
                       , lumenscript-studio
                       , hspec
