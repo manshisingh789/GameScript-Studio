@@ -10,6 +10,7 @@ import qualified DemoSpec
 import qualified CompilerSpec
 import qualified GridWorldSpec
 import qualified SimStateSpec
+import qualified GUIPanelSpec
 
 main :: IO ()
 main = hspec $ do
@@ -26,3 +27,5 @@ main = hspec $ do
 
   GridWorldSpec.spec
   SimStateSpec.spec
+
+  GUIPanelSpec.spec

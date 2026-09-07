@@ -2,11 +2,13 @@ module Main where
 
 import System.Environment (getArgs)
 import Compiler (compile, CompilationResult(..))
+import GUI.App (runGui)
 
 main :: IO ()
 main = do
     args <- getArgs
     case args of
+        ["--gui"] -> runGui
         [file] -> do
             source <- readFile file
             case compile source of
@@ -20,4 +22,4 @@ main = do
                     putStrLn "Parse Error:"
                     print err
         _ ->
-            putStrLn "Usage: cabal run <script.lum>"
+            putStrLn "Usage: cabal run <script.lum>  |  cabal run -- --gui"

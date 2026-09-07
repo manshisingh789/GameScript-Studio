@@ -34,6 +34,8 @@ library
                       , GUI.BytecodeViewer
                       , GUI.StackTraceViewer
                       , Compiler
+                      , GUI.Panel
+                      , GUI.App
   build-depends:        base >= 4.7 && < 5
                       , text
                       , containers
@@ -67,6 +69,7 @@ test-suite lumenscript-studio-test
                       , CompilerSpec
                       , GridWorldSpec
                       , SimStateSpec
+                      , GUIPanelSpec
   build-depends:        base
                       , lumenscript-studio
                       , hspec
