@@ -25,10 +25,10 @@ data SimState = SimState
   , simLog   :: [String]  -- ^ newest entry first
   } deriving (Show)
 
-initSimState :: Int -> Int -> SimState
-initSimState w h = SimState
+initSimState :: Int -> Int -> VarEnv -> SimState
+initSimState w h varEnv = SimState
   { simWorld = initGridWorld w h
-  , simVars  = Map.empty
+  , simVars  = varEnv
   , simLog   = []
   }
 

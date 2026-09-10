@@ -291,7 +291,7 @@ generateStmt
     generateStmts stForHandler body
 
   let handlerInstructions =
-        reverse (instructions stAfterHandler)
+        instructions stAfterHandler
 
   pure $
     st
@@ -300,9 +300,9 @@ generateStmt
           : handlers st
 
       , instructions =
-          instructions st
+          handlerInstructions
           ++ [LABEL handlerLabel]
-          ++ handlerInstructions
+          ++ instructions st
 
       , labelCount =
           labelCount stAfterHandler
@@ -344,7 +344,7 @@ generateExpr st (Var name _) =
 
     Nothing ->
       Right
-        (st, [LOAD name ""])
+        (st, [LOAD_VAR name])
 
 
 -- Unary expression
@@ -512,4 +512,3 @@ calleeLabel (Member obj field _) =
 
 calleeLabel other =
   show other
-

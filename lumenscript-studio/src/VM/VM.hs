@@ -6,6 +6,8 @@ module VM.VM
   , runEvent
   , execLoop
   , fetchInstr
+  , initVMState
+  , handlerEnd
   ) where
 
 import qualified Data.Map as Map
@@ -180,7 +182,9 @@ step host st instr = case instr of
     in case v of
          VBool False -> jumpTo label st { vmStack = s1 }
          VBool True  -> pure $ advance st { vmStack = s1 }
-         other       -> error $ "[vm] JUMP_IF_FALSE expects a bool on the stack, got: " ++ show other
+         VInt 0      -> jumpTo label st { vmStack = s1 } -- Treat 0 as false
+         VInt _      -> pure $ advance st { vmStack = s1 } -- Treat non-zero as true
+         other       -> error $ "[vm] JUMP_IF_FALSE expects a bool or int on the stack, got: " ++ show other
 
   JUMP label -> jumpTo label st
 

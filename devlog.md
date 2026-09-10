@@ -3,6 +3,15 @@
 
 A chronological log of the project's development milestones.
 
+### 10 & 11 September 2026
+
+- **End-to-End Pipeline Debugging**: Completed a major debugging effort across the entire compiler pipeline, resolving critical integration issues.
+- **Type Checker Enhancement**: Modified the type checker to correctly handle integers as conditions in `if` statements.
+- **Bytecode Generation Fixes**: Corrected multiple bugs in the bytecode generator, including improper `LOAD` instruction generation and fundamental instruction ordering errors.
+- **VM Update**: Enhanced the virtual machine to interpret integers as boolean values, enabling conditional branching to work as intended.
+
+**Challenges:** Tracing a single logical issue (`if` statements with integers) required a deep-dive debugging session through three separate components: the type checker, the bytecode generator, and the virtual machine.
+
 ### 12 August 2026
 
 - **Successful Integration**: Fully integrated the semantic analysis, bytecode generation, and compiler pipeline modules. All tests are now passing, and demo scripts compile successfully.
@@ -53,4 +62,4 @@ A chronological log of the project's development milestones.
 - **Core Implementation & TDD**: Methodically implemented the logic for each lexer helper function one by one. Followed a Test-Driven Development (TDD) approach by writing a corresponding unit test in `LexerSpec.hs` for each piece of functionality. This included handling numbers, strings, identifiers, operators, symbols, whitespace, and position tracking.
 - **Error Handling**: Implemented robust lexical error reporting for invalid characters or malformed tokens.
 
-  **Challenges:** The primary challenge was managing the complexity of building a lexer from scratch. This was addressed by first defining the entire token set (`Token.hs`), then creating a scaffold of empty functions (`Lexer.hs`), and finally implementing and testing each function individually. 
+  **Challenges:** The primary challenge was managing the complexity of building a lexer from scratch. This was addressed by first defining the entire token set (`Token.hs`), then creating a scaffold of empty functions (`Lexer.hs`), and finally implementing and testing each function individually.

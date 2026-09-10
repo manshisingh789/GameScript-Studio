@@ -83,8 +83,8 @@ typeCheckStmt st (ExprStmt e) = do
 
 typeCheckStmt st (If cond thenBlock elseBlock ifPos) = do
   condTy <- inferExpr st cond
-  -- Report an error if the condition is not a boolean, unless it's already an unknown type.
-  when (condTy /= TBool && condTy /= TUnknown) $
+  -- Report an error if the condition is not a boolean or an integer, unless it's already an unknown type.
+  when (condTy `notElem` [TBool, TInt, TUnknown]) $
     logError (InvalidCondition condTy (exprPosOr ifPos cond))
 
   -- Each branch gets its own scope; declarations inside it don't leak.

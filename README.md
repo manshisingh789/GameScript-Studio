@@ -22,19 +22,15 @@ Ensure you have [Stack](https://docs.haskellstack.org/en/stable/install_and_upgr
     ```bash
     stack clean
     ```
-2.  **Build the project:**
+2.  **Build and run the full test suite:**
     ```bash
-    stack build
+    stack test
     ```
 3.  **Run specific tests (compile stages):**
     ```bash
     stack test --ta "--match compileStages"
     ```
-4.  **Run the full test suite:**
-    ```bash
-    stack test
-    ```
-5.  **Run the application with the GUI:**
+4.  **Run the application with the GUI:**
     ```bash
     stack exec lumenscript-studio-exe -- --gui
     ```

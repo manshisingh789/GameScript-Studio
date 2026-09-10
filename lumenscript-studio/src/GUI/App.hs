@@ -10,6 +10,7 @@ import Graphics.UI.Threepenny.Core
 import Compiler (CompilationResult(..), PipelineStages(..), compileStages)
 import VM.EventTrigger (CompiledProgram(..))
 import Simulation.SimState
+import VM.VM (VarEnv, VMState (vmVars), execLoop, defaultHostEnv, initVMState, handlerEnd)
 
 import GUI.EditorPanel
 import GUI.TokenViewer
@@ -42,7 +43,7 @@ simHeight = 8
 -- the full real pipeline exactly once per click via
 -- Compiler.compileStages -- Editor -> Lexer -> Parser -> Semantic
 -- Analyzer -> Bytecode Generator -> VM -> Simulation -> these panels,
--- with no stage re-run or duplicated.
+-- with no stage re-run or duplicated work.
 --
 --   * Tokens      -- psTokens from compileStages: the real output of
 --                    Lexer.lexer.
@@ -83,10 +84,11 @@ simHeight = 8
 runGui :: IO ()
 runGui = do
   savedSourceRef <- newIORef demoSource
-  startGUI defaultConfig (setup savedSourceRef)
+  savedVarEnvRef <- newIORef Map.empty
+  startGUI defaultConfig (setup savedSourceRef savedVarEnvRef)
 
-setup :: IORef String -> Window -> UI ()
-setup savedSourceRef window = do
+setup :: IORef String -> IORef VarEnv -> Window -> UI ()
+setup savedSourceRef savedVarEnvRef window = do
   void $ return window # set UI.title "LumenScript Studio"
 
   initialSource <- liftIO $ readIORef savedSourceRef
@@ -134,7 +136,13 @@ setup savedSourceRef window = do
       CompilationSuccess compiledProgram -> do
         void $ element (epStatus editor) # set UI.text "Compiled successfully."
         updateBytecodeViewer bytecodeViewer (formatCompiledProgram compiledProgram)
-        traceLines <- runAllHandlers compiledProgram
+        
+        -- Run the main script body and save the resulting variable environment
+        let initialVarEnv = Map.empty
+        finalVarEnv <- liftIO $ runMain compiledProgram initialVarEnv
+        liftIO $ writeIORef savedVarEnvRef finalVarEnv
+        
+        traceLines <- runAllHandlers compiledProgram finalVarEnv
         updateStackTraceViewer stackTraceViewer traceLines
 
       SemanticErrors errs -> do
@@ -159,9 +167,9 @@ setup savedSourceRef window = do
 -- Simulation.SimState.stepEvent, not fabricated data. Reports which
 -- handlers ran, the final variable store, and the full LOAD/CALL
 -- trace collected along the way.
-runAllHandlers :: CompiledProgram -> UI [String]
-runAllHandlers prog = liftIO $ do
-  ref <- newIORef (initSimState simWidth simHeight)
+runAllHandlers :: CompiledProgram -> VarEnv -> UI [String]
+runAllHandlers prog initialVarEnv = liftIO $ do
+  ref <- newIORef (initSimState simWidth simHeight initialVarEnv)
   let specs = map fst (cpHandlers prog)
   runQueued ref prog specs
   finalState <- readIORef ref
@@ -172,3 +180,9 @@ runAllHandlers prog = liftIO $ do
     , ""
     , "Execution trace (oldest first):"
     ] ++ reverse (simLog finalState)
+
+runMain :: CompiledProgram -> VarEnv -> IO VarEnv
+runMain prog varEnv = do
+    let st0 = initVMState (cpInstrs prog) varEnv 0
+    stFinal <- execLoop defaultHostEnv (handlerEnd "" (cpInstrs prog) []) st0
+    pure (vmVars stFinal)

@@ -378,7 +378,7 @@ spec = do
             [ InvalidOperandType "!" TInt p
             ]
 
-      it "reports an invalid if condition" $ do
+      it "allows an integer as a condition in an if statement" $ do
         let program =
               [ If
                   (LitInt 10)
@@ -386,10 +386,7 @@ spec = do
                   Nothing
                   p
               ]
-        analyze program
-          `shouldBe`
-            [ InvalidCondition TInt p
-            ]
+        analyze program `shouldSatisfy` semanticOk
 
       it "allows equality comparison between values of the same type" $ do
         let program =
@@ -528,7 +525,6 @@ spec = do
           `shouldBe`
             [ UndefinedVariable "missing" p
             , InvalidOperandType "+" TString p2
-            , InvalidCondition TInt p3
             ]
 
       it "does not stop after an undefined variable" $ do

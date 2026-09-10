@@ -66,13 +66,13 @@ twoHandlerProgram = CompiledProgram
 
 runStep :: CompiledProgram -> EventSpec -> IO SimState
 runStep prog spec = do
-  ref <- newIORef (initSimState 10 8)
+  ref <- newIORef (initSimState 10 8 Map.empty)
   stepEvent ref prog spec
   readIORef ref
 
 runQueuedFrom :: CompiledProgram -> [EventSpec] -> IO SimState
 runQueuedFrom prog specs = do
-  ref <- newIORef (initSimState 10 8)
+  ref <- newIORef (initSimState 10 8 Map.empty)
   runQueued ref prog specs
   readIORef ref
 
@@ -80,19 +80,19 @@ spec :: Spec
 spec = do
   describe "initSimState" $ do
     it "initializes the world with the given dimensions" $ do
-      let s = initSimState 10 8
+      let s = initSimState 10 8 Map.empty
       gwWidth (simWorld s) `shouldBe` 10
       gwHeight (simWorld s) `shouldBe` 8
 
     it "starts with an empty variable store" $ do
-      simVars (initSimState 10 8) `shouldBe` Map.empty
+      simVars (initSimState 10 8 Map.empty) `shouldBe` Map.empty
 
     it "starts with an empty log" $ do
-      simLog (initSimState 10 8) `shouldBe` []
+      simLog (initSimState 10 8 Map.empty) `shouldBe` []
 
   describe "mkSimHostEnv" $ do
     it "hostLoad reads a real player field and logs the read" $ do
-      ref <- newIORef (initSimState 10 8)
+      ref <- newIORef (initSimState 10 8 Map.empty)
       let host = mkSimHostEnv ref
       v <- hostLoad host "player" "distance"
       v `shouldBe` VInt 0
@@ -100,7 +100,7 @@ spec = do
       simLog st `shouldBe` ["[sim] player.distance -> 0"]
 
     it "hostLoad on an unrecognized field logs a warning and returns VUnit" $ do
-      ref <- newIORef (initSimState 10 8)
+      ref <- newIORef (initSimState 10 8 Map.empty)
       let host = mkSimHostEnv ref
       v <- hostLoad host "player" "nope"
       v `shouldBe` VUnit
@@ -108,7 +108,7 @@ spec = do
       simLog st `shouldBe` ["[sim] unknown property: player.nope"]
 
     it "hostCall mutates the world and logs the call" $ do
-      ref <- newIORef (initSimState 10 8)
+      ref <- newIORef (initSimState 10 8 Map.empty)
       let host = mkSimHostEnv ref
       _ <- hostCall host "player" "jump" []
       st <- readIORef ref
@@ -117,7 +117,7 @@ spec = do
       simLog st `shouldBe` ["[sim] player.jump[]"]
 
     it "hostCall on npc.say records the line via GridWorld" $ do
-      ref <- newIORef (initSimState 10 8)
+      ref <- newIORef (initSimState 10 8 Map.empty)
       let host = mkSimHostEnv ref
       _ <- hostCall host "npc" "say" [VStr "hi"]
       st <- readIORef ref
@@ -153,7 +153,7 @@ spec = do
       st <- runStep prog (KeyPress "DoesNotExist")
       simVars st `shouldBe` Map.empty
       simLog st `shouldBe` []
-      simWorld st `shouldBe` simWorld (initSimState 10 8)
+      simWorld st `shouldBe` simWorld (initSimState 10 8 Map.empty)
 
     it "does not let one handler's execution fall through into the next handler's code" $ do
       st <- runStep twoHandlerProgram (KeyPress "A")

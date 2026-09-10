@@ -64,10 +64,8 @@ spec = do
 
     it "handles unary operations and pops result" $
       let ast = [ExprStmt (Unary Not (Var "alive" dummyPos) dummyPos)]
-          -- "alive" is never declared, so ST.resolve fails and the
-          -- fallback `LOAD name ""` form is used instead of LOAD_VAR.
           expected = Right $ CompiledProgram
-            { cpInstrs = [LOAD "alive" "", UNOP Not, POP]
+            { cpInstrs = [LOAD_VAR "alive", UNOP Not, POP]
             , cpHandlers = []
             }
       in generateBytecode ast `shouldBe` expected
@@ -165,25 +163,15 @@ spec = do
           allUniqueLabels = nub (defined ++ used)
       in length defined `shouldBe` length allUniqueLabels
 
-    -- NOTE: the `OnEvent` branch of Generator.hs reverses the handler
-    -- body's instructions *before* the outer `reverse` in
-    -- `generateBytecode` runs, unlike every other branch (If, ExprStmt,
-    -- etc.) which leaves its output in the "un-reversed accumulator"
-    -- form for that final reverse to fix. The result is that the handler
-    -- body, its LABEL, and anything preceding it in the program all get
-    -- flipped an extra time, producing what looks like genuinely wrong
-    -- instruction order. This test asserts the ACTUAL current output so
-    -- the suite passes; it very likely reflects a real bug worth fixing
-    -- in Generator.hs's `OnEvent` case.
-    it "separates main block and event handlers (documents current, likely-buggy ordering)" $
+    it "separates main block and event handlers" $
       let ast =
             [ Decl "x" (LitInt 10) dummyPos
             , OnEvent (KeyPress "SPACE") [ExprStmt (Call (Var "player" dummyPos) [] dummyPos)] dummyPos
             ]
           expected = Right $ CompiledProgram
             { cpInstrs =
-                [ POP, CALL "" "player" 0, LABEL "key_press_SPACE"
-                , PUSH_INT 10, STORE_VAR "x"
+                [ PUSH_INT 10, STORE_VAR "x"
+                , LABEL "key_press_SPACE", CALL "" "player" 0, POP
                 ]
             , cpHandlers = [(KeyPress "SPACE", "key_press_SPACE")]
             }
