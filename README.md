@@ -60,7 +60,7 @@ stack run lumenscript-studio-exe -- demos/platformer.lum
   - `Bytecode/`: Bytecode generation module (in progress)
   - `GUI/`: IDE components
   - `Simulation/`: Game simulation logic
-  - `VM/`: Virtual machine implementation (not started)
+  - `VM/`: Virtual machine implementation
 - `test/`: Contains the test suites for all components
 - `demos/`: Example `.lum` scripts demonstrating language features
 - `lumenscript-studio.cabal`: The main package definition file
@@ -94,8 +94,7 @@ on collision "player" "coin": score = score + 10
 - [x] **Bytecode Compiler**: Compiles the AST to an intermediate representation.
   - **Status**: Complete (compiler-v1.0-beta).
   - **Details**: The end-to-end compiler pipeline is complete, integrating the lexer, parser, semantic analysis, and bytecode generation. All tests pass and demo scripts compile successfully.
-- [ ] **Virtual Machine (VM)**: Executes the compiled bytecode.
-  - Not started yet
+- [x] **Virtual Machine (VM)**: Executes the compiled bytecode.
 
 ---
 

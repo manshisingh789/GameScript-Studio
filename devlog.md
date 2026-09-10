@@ -28,16 +28,14 @@ A chronological log of the project's development milestones.
   - **Cleaner Tests & API**: Simplified the test suite with a helper function and adopted idiomatic Hspec (`shouldSatisfy`). Renamed functions for clarity and established `analyzeProgram` as the single, clear entry point.
 - **Initiated Bytecode Generation**: Created the `bytecode-generation` feature branch to begin development of the bytecode generation module.
 
-  **Challenges:**
-  - **Semantic Analysis Debugging**: Faced difficulties in resolving errors within the semantic analysis test module, which required significant debugging effort.
+  **Challenges:** Faced difficulties in resolving errors within the semantic analysis test module, which required significant debugging effort.
 
 ### 4 August 2026
 
 - **Verified Tokenization**: Audited the lexer correctly handles all specified language features, including keywords, identifiers, literals (integers and strings), operators, and symbols.
 - **Finalized Core Mechanics**: Validated position tracking, comment and whitespace handling, and the use of `NEWLINE` as a statement separator.
 
-  **Challenges:**
-  - Collaboration Friction: Concurrent work on core files like `Token.hs` and `Lexer.hs` led to merge conflicts and development bottlenecks.
+  **Challenges:** Collaboration Friction: Concurrent work on core files like `Token.hs` and `Lexer.hs` led to merge conflicts and development bottlenecks.
 
 ### 3 August 2026
 
@@ -48,9 +46,6 @@ A chronological log of the project's development milestones.
 - **Lexer Freeze**: Officially "froze" the lexer by creating the `lexer-v1.0-beta` Git tag to mark a stable version for the parser phase.
 - **Project Documentation**: Overhauled the `README.md` with a project description, setup instructions, a roadmap, and the final token set documentation.
 
-  **Challenges:**
-  - None so far.
-
 ### 2 August 2026
 
 - **Lexer Scaffolding**: Began the lexer implementation by defining the complete set of required language tokens in `Token.hs`.
@@ -58,6 +53,4 @@ A chronological log of the project's development milestones.
 - **Core Implementation & TDD**: Methodically implemented the logic for each lexer helper function one by one. Followed a Test-Driven Development (TDD) approach by writing a corresponding unit test in `LexerSpec.hs` for each piece of functionality. This included handling numbers, strings, identifiers, operators, symbols, whitespace, and position tracking.
 - **Error Handling**: Implemented robust lexical error reporting for invalid characters or malformed tokens.
 
-  **Challenges:**
-  - **Initial Complexity**: The primary challenge was managing the complexity of building a lexer from scratch.
-  - **Methodical Solution**: This was addressed by adopting a structured approach: first defining the entire token set (`Token.hs`), then creating a scaffold of empty functions (`Lexer.hs`), and finally implementing and testing each function individually. This broke the problem down into small, manageable, and testable parts.
+  **Challenges:** The primary challenge was managing the complexity of building a lexer from scratch. This was addressed by first defining the entire token set (`Token.hs`), then creating a scaffold of empty functions (`Lexer.hs`), and finally implementing and testing each function individually. 
