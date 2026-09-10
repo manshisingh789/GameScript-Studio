@@ -16,21 +16,28 @@ This project is built using the [Haskell Stack tool](https://docs.haskellstack.o
 
 Ensure you have [Stack](https://docs.haskellstack.org/en/stable/install_and_upgrade/) installed on your system.
 
-### Building the Project
+### Building and Running
 
-To build the project and all its dependencies, run the following command:
-
-```bash
-stack build
-```
-
-### Running Tests
-
-The project includes a test suite to verify the functionality of the lexer, parser, and other components. To run the tests, use:
-
-```bash
-stack test
-```
+1.  **Clean the project:**
+    ```bash
+    stack clean
+    ```
+2.  **Build the project:**
+    ```bash
+    stack build
+    ```
+3.  **Run specific tests (compile stages):**
+    ```bash
+    stack test --ta "--match compileStages"
+    ```
+4.  **Run the full test suite:**
+    ```bash
+    stack test
+    ```
+5.  **Run the application with the GUI:**
+    ```bash
+    stack exec lumenscript-studio-exe -- --gui
+    ```
 
 ### Running Demos
 
