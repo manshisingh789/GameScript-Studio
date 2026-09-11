@@ -24,7 +24,6 @@ Ensure you have [Stack](https://docs.haskellstack.org/en/stable/install_and_upgr
     ```
 2.  **Build and run the full test suite:**
     ```bash
-    stack build
     stack test
     ```
 3.  **Run specific tests (compile stages):**

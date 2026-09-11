@@ -11,7 +11,7 @@ spec :: Spec
 spec = do
   describe "Compiler Pipeline" $ do
     it "compiles valid source code to bytecode" $
-      let source = "let x = 10; if x > 5 { x = x - 1; }"
+      let source = "let x = 10; if x > 5: { x = x - 1; }"
       in case compile source of
            CompilationSuccess prog -> do
              -- Structural checks only: this pipeline goes through the real

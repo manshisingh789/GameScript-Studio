@@ -2,15 +2,17 @@ module GUI.TokenViewer
   ( TokenViewer(..)
   , createTokenViewer
   , updateTokenViewer
+  , dummyTokens
   , dummyTokenLines
   ) where
 
 import Graphics.UI.Threepenny.Core (Element, UI)
-import GUI.Panel (createListPanel, updateListPanel)
+import GUI.Panel (createTokenPanel, updateTokenPanel)
+import Token (Token(..), TokenPayload(..), Position(..))
 
--- | The token list panel. Shows 'dummyTokenLines' only until the
+-- | The token list panel. Shows 'dummyTokens' only until the
 -- first compile -- GUI.App wires the "Compile" button to call
--- `updateTokenViewer viewer (map show realTokens)` using the real
+-- `updateTokenViewer viewer realTokens` using the real
 -- output of Lexer.lexer, so after that this panel reflects the
 -- editor's actual token stream.
 data TokenViewer = TokenViewer
@@ -18,24 +20,26 @@ data TokenViewer = TokenViewer
   , tvContent :: Element
   }
 
-createTokenViewer :: UI TokenViewer
-createTokenViewer = do
-  (root, content) <- createListPanel "Tokens" placeholderMsg dummyTokenLines
+createTokenViewer :: Element -> UI TokenViewer
+createTokenViewer sourceArea = do
+  (root, content) <- createTokenPanel "Tokens" placeholderMsg dummyTokens sourceArea
   pure (TokenViewer root content)
 
--- | Replace the panel's rows with one line per entry in `tokenLines`.
-updateTokenViewer :: TokenViewer -> [String] -> UI ()
-updateTokenViewer tv = updateListPanel (tvContent tv) placeholderMsg
+-- | Replace the panel's rows with one line per entry in `tokens`.
+updateTokenViewer :: TokenViewer -> [Token] -> Element -> UI ()
+updateTokenViewer tv = updateTokenPanel (tvContent tv) placeholderMsg
 
 placeholderMsg :: String
 placeholderMsg = "(no tokens yet -- compile a script to see them here)"
 
 -- | Static placeholder rows shown before real token data is wired up.
-dummyTokenLines :: [String]
-dummyTokenLines =
-  [ "KW_LET      \"let\""
-  , "IDENT       \"x\""
-  , "OP_ASSIGN   \"=\""
-  , "INT_LIT     \"5\""
-  , "SEPARATOR"
+dummyTokens :: [Token]
+dummyTokens =
+  [ Token (TKwLet) (Position 1 1)
+  , Token (TIdent "x") (Position 1 5)
+  , Token (TAssign) (Position 1 7)
+  , Token (TInt 5) (Position 1 9)
   ]
+
+dummyTokenLines :: [String]
+dummyTokenLines = map show dummyTokens

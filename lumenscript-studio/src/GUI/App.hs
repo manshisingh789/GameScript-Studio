@@ -94,7 +94,7 @@ setup savedSourceRef savedVarEnvRef window = do
   initialSource <- liftIO $ readIORef savedSourceRef
 
   editor           <- createEditorPanel initialSource
-  tokenViewer      <- createTokenViewer
+  tokenViewer      <- createTokenViewer (epSourceArea editor)
   astViewer        <- createASTViewer
   bytecodeViewer   <- createBytecodeViewer
   stackTraceViewer <- createStackTraceViewer
@@ -124,7 +124,7 @@ setup savedSourceRef savedVarEnvRef window = do
     -- Lexer/Parser calls, no duplicated work.
     let stages = compileStages source
 
-    updateTokenViewer tokenViewer (map show (psTokens stages))
+    updateTokenViewer tokenViewer (psTokens stages) (epSourceArea editor)
 
     case psParse stages of
       Right (program, _leftoverTokens) ->

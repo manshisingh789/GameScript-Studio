@@ -5,12 +5,12 @@ A chronological log of the project's development milestones.
 
 ### 10 & 11 September 2026
 
-- Integrated position tracking into the Abstract Syntax Tree for more precise error localization, which involved updating the test suite to match the new node signatures, and fixed a regression in the bytecode generator to ensure correct execution of event handlers.
-- Implemented true immutability for `const` declarations
-- **End-to-End Pipeline Debugging**: Completed a major debugging effort across the entire compiler pipeline, resolving critical integration issues.
-- **Type Checker Enhancement**: Modified the type checker to correctly handle integers as conditions in `if` statements.
-- **Bytecode Generation Fixes**: Corrected multiple bugs in the bytecode generator, including improper `LOAD` instruction generation and fundamental instruction ordering errors.
-- **VM Update**: Enhanced the virtual machine to interpret integers as boolean values, enabling conditional branching to work as intended.
+- **Token Highlighting**: Implemented a feature to highlight text in the code editor when a corresponding token is hovered over in the "Token Viewer".
+- **AST Position Tracking**: Integrated position tracking into the AST for more precise error localization, which included updating the test suite and fixing a bytecode regression.
+- **Immutable `const`**: Enforced true immutability for `const` declarations.
+- **Compiler Pipeline Debugging**: Completed a major debugging effort, resolving several critical bugs:
+  - Enabled `if` statements with integer conditions by updating the type checker, bytecode generator, and VM.
+  - Corrected improper `LOAD` instruction generation and instruction ordering in the bytecode.
 
 **Challenges:** Tracing a single logical issue (`if` statements with integers) required a deep-dive debugging session through three separate components: the type checker, the bytecode generator, and the virtual machine.
 

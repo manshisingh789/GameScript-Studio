@@ -76,20 +76,14 @@ parseIfStatement :: [Token] -> ParseResult Stmt
 parseIfStatement (kw:rest0)
   | tokenType kw == TKwIf = do
       (cond, rest1) <- parseExpression rest0
-      (thenBlock, rest2) <- case peek rest1 of
-        Just t | tokenType t == TColon -> do
-          (block, rest) <- parseBlock (drop 1 rest1)
-          return (block, rest)
-        _ -> parseBlock rest1
-      case skipNewlines rest2 of
-        (elseTok:rest3) | tokenType elseTok == TKwElse -> do
-          (elseBlock, rest4) <- case peek rest3 of
-            Just t | tokenType t == TColon -> do
-              (block, rest) <- parseBlock (drop 1 rest3)
-              return (block, rest)
-            _ -> parseBlock rest3
-          pure (If cond thenBlock (Just elseBlock) (tokenPosition kw), rest4)
-        _ -> pure (If cond thenBlock Nothing (tokenPosition kw), rest2)
+      rest2 <- expect TColon rest1
+      (thenBlock, rest3) <- parseBlock rest2
+      case skipNewlines rest3 of
+        (elseTok:rest4) | tokenType elseTok == TKwElse -> do
+          rest5 <- expect TColon rest4
+          (elseBlock, rest6) <- parseBlock rest5
+          pure (If cond thenBlock (Just elseBlock) (tokenPosition kw), rest6)
+        _ -> pure (If cond thenBlock Nothing (tokenPosition kw), rest3)
 parseIfStatement (t:_) = Left (ParseError "Expected 'if'" (tokenPosition t))
 parseIfStatement [] = Left (ParseError "Unexpected end of input" eofPosition)
 -- eventStatement = "on" "key_press" identifier ":" block ;
