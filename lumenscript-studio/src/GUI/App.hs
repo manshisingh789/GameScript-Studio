@@ -85,11 +85,13 @@ runGui :: IO ()
 runGui = do
   savedSourceRef <- newIORef demoSource
   savedVarEnvRef <- newIORef Map.empty
-  startGUI defaultConfig (setup savedSourceRef savedVarEnvRef)
+  let guiConfig = defaultConfig { jsStatic = Just "www" }
+  startGUI guiConfig (setup savedSourceRef savedVarEnvRef)
 
 setup :: IORef String -> IORef VarEnv -> Window -> UI ()
 setup savedSourceRef savedVarEnvRef window = do
   void $ return window # set UI.title "LumenScript Studio"
+  UI.addStyleSheet window "/static/ast.css"
 
   initialSource <- liftIO $ readIORef savedSourceRef
 
@@ -128,9 +130,9 @@ setup savedSourceRef savedVarEnvRef window = do
 
     case psParse stages of
       Right (program, _leftoverTokens) ->
-        updateASTViewer astViewer (map show program)
+        updateASTViewer astViewer (Right program)
       Left parseErr ->
-        updateASTViewer astViewer ["Parse failed: " ++ show parseErr]
+        updateASTViewer astViewer (Left $ "Parse failed: " ++ show parseErr)
 
     case psResult stages of
       CompilationSuccess compiledProgram -> do

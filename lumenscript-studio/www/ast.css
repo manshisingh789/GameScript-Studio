@@ -1,0 +1,29 @@
+.tree-node {
+  margin-left: 20px;
+  position: relative;
+}
+
+.tree-label {
+  cursor: pointer;
+  display: block;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+.tree-label:hover {
+  background-color: #f0f0f0;
+}
+
+.tree-children {
+  border-left: 1px solid #ccc;
+  margin-left: 10px;
+  padding-left: 10px;
+}
+
+.collapsed {
+  display: none;
+}
+
+.tree-leaf .tree-children {
+  display: none;
+}

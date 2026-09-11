@@ -3,6 +3,10 @@
 
 A chronological log of the project's development milestones.
 
+### 12 September 2026
+
+- **Navigable AST Viewer**: Overhauled the AST Viewer, replacing the plain text dump with an interactive, navigable tree structure. The new view supports expanding and collapsing nodes and their children, significantly improving the debugging and analysis workflow.
+
 ### 10 & 11 September 2026
 
 - **Token Highlighting**: Implemented a feature to highlight text in the code editor when a corresponding token is hovered over in the "Token Viewer".
