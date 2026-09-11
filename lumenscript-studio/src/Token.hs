@@ -14,7 +14,7 @@ data TokenPayload
   | TPlus | TMinus | TMultiply | TDivide | TMod
   | TLt | TGt | TEq | TNotEqual | TLe | TGe
   | TNot
-  | TKwLet | TKwIf | TKwElse | TKwElif | TKwOn | TKwKeyPress | TKwCollision | TKwUpdate | TKwInteract
+  | TKwLet | TKwConst | TKwIf | TKwElse | TKwElif | TKwOn | TKwKeyPress | TKwCollision | TKwUpdate | TKwInteract
   | TNewline
   | TBlank
   | TEOF
@@ -29,6 +29,7 @@ data Token = Token
 keywords :: [(String, TokenPayload)]
 keywords =
   [ ("let",   TKwLet)
+  , ("const", TKwConst)
   , ("if",    TKwIf)
   , ("else",  TKwElse)
   , ("elif",  TKwElif)

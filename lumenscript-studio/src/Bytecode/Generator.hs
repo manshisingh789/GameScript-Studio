@@ -95,9 +95,9 @@ generateStmt st (ExprStmt expr) = do
 
 
 -- | Generate a variable declaration.
-generateStmt st (Decl name expr _) = do
+generateStmt st (Decl name _ rhs _) = do
   (st', exprInstrs) <-
-    generateExpr st expr
+    generateExpr st rhs
 
   let newInstructions =
         STORE_VAR name : exprInstrs
@@ -273,6 +273,9 @@ generateStmt
   (OnEvent (KeyPress eventType) body _) = do
 
   let
+    (st', afterLabel) =
+      newLabel st "after_event"
+
     handlerLabel =
       "key_press_" ++ eventType
 
@@ -282,9 +285,9 @@ generateStmt
     stForHandler =
       initialState
         { labelCount =
-            labelCount st
+            labelCount st'
         , symbolTable =
-            symbolTable st
+            symbolTable st'
         }
 
   stAfterHandler <-
@@ -294,15 +297,17 @@ generateStmt
         instructions stAfterHandler
 
   pure $
-    st
+    st'
       { handlers =
           (eventSpec, handlerLabel)
-          : handlers st
+          : handlers st'
 
       , instructions =
-          handlerInstructions
+          [LABEL afterLabel]
+          ++ handlerInstructions
           ++ [LABEL handlerLabel]
-          ++ instructions st
+          ++ [JUMP afterLabel]
+          ++ instructions st'
 
       , labelCount =
           labelCount stAfterHandler

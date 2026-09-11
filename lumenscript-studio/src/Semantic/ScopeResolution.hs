@@ -38,9 +38,10 @@ resolveStmts :: SymbolTable -> [Stmt] -> SemanticM SymbolTable
 resolveStmts = foldM resolveStmt
 
 resolveStmt :: SymbolTable -> Stmt -> SemanticM SymbolTable
-resolveStmt st (Decl name rhs pos) = do
-  resolveExpr st rhs
-  case declare name TUnknown pos st of
+resolveStmt st (Decl name _ rhs pos) = do
+  _ <- resolveExpr st rhs
+  let result = declare name TUnknown Mutable pos st
+  case result of
     Left firstPos -> do
       logError (DuplicateDeclaration name pos firstPos)
       pure st                 -- keep the original binding; don't let a

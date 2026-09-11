@@ -4,6 +4,7 @@ module AST
   , UnaryOp(..)
   , BinOp(..)
   , EventSpec(..)
+  , Mutability(..)
   , Stmt(..)
   , Program
   ) where
@@ -45,9 +46,15 @@ data EventSpec
   | GenericEvent Ident [Ident] -- or EventName + parameters
   deriving (Show, Eq)
 
+-- | Specifies whether a variable is mutable or immutable.
+data Mutability
+  = Mutable   -- ^ Declared with 'let'.
+  | Immutable -- ^ Declared with 'const'.
+  deriving (Show, Eq)
+
 -- | Represents a statement in the LumenScript language.
 data Stmt
-  = Decl Ident Expr Position           -- ^ A variable declaration, e.g., `let x = 10;`. Stores the variable's position.
+  = Decl Ident Mutability Expr Position -- ^ A variable declaration, e.g., `let x = 10;`. Stores the variable's position.
   | Assign Expr Expr Position         -- ^ An assignment to a variable, e.g., `x = 20;`. Stores the variable's position.
   | ExprStmt Expr                      -- ^ An expression used as a statement, typically a function call for its side effects.
   | If Expr [Stmt] (Maybe [Stmt]) Position -- ^ An if-else statement. Stores the position of the 'if' keyword.

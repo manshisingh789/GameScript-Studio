@@ -16,7 +16,7 @@ spec :: Spec
 spec = do
   describe "Bytecode Generator" $ do
     it "handles variable declarations" $
-      let ast = [Decl "health" (LitInt 100) dummyPos]
+      let ast = [Decl "health" Mutable (LitInt 100) dummyPos]
           expected = Right $ CompiledProgram
             { cpInstrs = [PUSH_INT 100, STORE_VAR "health"]
             , cpHandlers = []
@@ -25,7 +25,7 @@ spec = do
 
     it "handles variable assignments" $
       let ast =
-            [ Decl "health" (LitInt 100) dummyPos
+            [ Decl "health" Mutable (LitInt 100) dummyPos
             , Assign (Var "health" dummyPos)
                 (Binary Sub (Var "health" dummyPos) (LitInt 10) dummyPos)
                 dummyPos
@@ -55,7 +55,7 @@ spec = do
       in generateBytecode ast `shouldBe` expected
 
     it "respects arithmetic precedence and pops result" $
-      let ast = [ExprStmt (Binary Add (Binary Mul (LitInt 2) (LitInt 5) dummyPos) (LitInt 3) dummyPos)]
+      let ast = [ExprStmt (Binary Add (Binary Mul (LitInt 2) (LitInt 5) dummyPos) (LitInt 3) dummyPos) ]
           expected = Right $ CompiledProgram
             { cpInstrs = [PUSH_INT 2, PUSH_INT 5, BINOP Mul, PUSH_INT 3, BINOP Add, POP]
             , cpHandlers = []
@@ -63,7 +63,7 @@ spec = do
       in generateBytecode ast `shouldBe` expected
 
     it "handles unary operations and pops result" $
-      let ast = [ExprStmt (Unary Not (Var "alive" dummyPos) dummyPos)]
+      let ast = [ExprStmt (Unary Not (Var "alive" dummyPos) dummyPos) ]
           expected = Right $ CompiledProgram
             { cpInstrs = [LOAD_VAR "alive", UNOP Not, POP]
             , cpHandlers = []
@@ -71,7 +71,7 @@ spec = do
       in generateBytecode ast `shouldBe` expected
 
     it "handles function calls without arguments and pops result" $
-      let ast = [ExprStmt (Call (Var "player" dummyPos) [] dummyPos)]
+      let ast = [ExprStmt (Call (Var "player" dummyPos) [] dummyPos) ]
           -- Plain (non-member) call: objectName is "", no LOAD is
           -- emitted for the callee itself.
           expected = Right $ CompiledProgram
@@ -81,15 +81,15 @@ spec = do
       in generateBytecode ast `shouldBe` expected
 
     it "handles function calls with arguments and pops result" $
-      let ast = [ExprStmt (Call (Var "dialogue" dummyPos) [LitStr "Hi"] dummyPos)]
+      let ast = [ExprStmt (Call (Var "takeDamage" dummyPos) [LitInt 10] dummyPos) ]
           expected = Right $ CompiledProgram
-            { cpInstrs = [PUSH_STR "Hi", CALL "" "dialogue" 1, POP]
+            { cpInstrs = [PUSH_INT 10, CALL "" "takeDamage" 1, POP]
             , cpHandlers = []
             }
       in generateBytecode ast `shouldBe` expected
 
     it "handles function calls with multiple arguments and pops result" $
-      let ast = [ExprStmt (Call (Var "setPosition" dummyPos) [LitInt 10, LitInt 20] dummyPos)]
+      let ast = [ExprStmt (Call (Var "setPosition" dummyPos) [LitInt 10, LitInt 20] dummyPos) ]
           expected = Right $ CompiledProgram
             { cpInstrs = [PUSH_INT 10, PUSH_INT 20, CALL "" "setPosition" 2, POP]
             , cpHandlers = []
@@ -104,7 +104,7 @@ spec = do
 
     it "handles if statements without an else block" $
       let ast =
-            [ Decl "health" (LitInt 50) dummyPos
+            [ Decl "health" Mutable (LitInt 50) dummyPos
             , If (Binary Le (Var "health" dummyPos) (LitInt 0) dummyPos)
                  [ExprStmt (Call (Member (Var "player" dummyPos) "jump" dummyPos) [] dummyPos)]
                  Nothing
@@ -126,8 +126,7 @@ spec = do
       let ast =
             [ If (Binary Lt (Member (Var "player" dummyPos) "distance" dummyPos) (LitInt 10) dummyPos)
                  [ExprStmt (Call (Member (Var "enemy" dummyPos) "attack" dummyPos) [] dummyPos)]
-                 (Just [ExprStmt (Call (Member (Var "enemy" dummyPos) "patrol" dummyPos) [] dummyPos)])
-                 dummyPos
+                 (Just [ExprStmt (Call (Member (Var "enemy" dummyPos) "patrol" dummyPos) [] dummyPos)]) dummyPos
             ]
           expected = Right $ CompiledProgram
             { cpInstrs =
@@ -145,9 +144,9 @@ spec = do
 
     it "generates unique labels for nested if statements" $
       let ast =
-            [ Decl "a" (LitInt 10) dummyPos
-            , Decl "b" (LitInt 5) dummyPos
-            , Decl "x" (LitInt 0) dummyPos
+            [ Decl "a" Mutable (LitInt 10) dummyPos
+            , Decl "b" Mutable (LitInt 5) dummyPos
+            , Decl "x" Mutable (LitInt 0) dummyPos
             , If (Binary Gt (Var "a" dummyPos) (LitInt 5) dummyPos)
                 [If (Binary Lt (Var "b" dummyPos) (LitInt 3) dummyPos)
                   [Assign (Var "x" dummyPos) (LitInt 1) dummyPos]
@@ -165,13 +164,16 @@ spec = do
 
     it "separates main block and event handlers" $
       let ast =
-            [ Decl "x" (LitInt 10) dummyPos
+            [ Decl "x" Mutable (LitInt 10) dummyPos
             , OnEvent (KeyPress "SPACE") [ExprStmt (Call (Var "player" dummyPos) [] dummyPos)] dummyPos
             ]
           expected = Right $ CompiledProgram
             { cpInstrs =
                 [ PUSH_INT 10, STORE_VAR "x"
-                , LABEL "key_press_SPACE", CALL "" "player" 0, POP
+                , JUMP "after_event_0"
+                , LABEL "key_press_SPACE"
+                , CALL "" "player" 0, POP
+                , LABEL "after_event_0"
                 ]
             , cpHandlers = [(KeyPress "SPACE", "key_press_SPACE")]
             }

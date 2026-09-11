@@ -5,6 +5,8 @@ A chronological log of the project's development milestones.
 
 ### 10 & 11 September 2026
 
+- Integrated position tracking into the Abstract Syntax Tree for more precise error localization, which involved updating the test suite to match the new node signatures, and fixed a regression in the bytecode generator to ensure correct execution of event handlers.
+- Implemented true immutability for `const` declarations
 - **End-to-End Pipeline Debugging**: Completed a major debugging effort across the entire compiler pipeline, resolving critical integration issues.
 - **Type Checker Enhancement**: Modified the type checker to correctly handle integers as conditions in `if` statements.
 - **Bytecode Generation Fixes**: Corrected multiple bugs in the bytecode generator, including improper `LOAD` instruction generation and fundamental instruction ordering errors.

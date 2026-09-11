@@ -55,9 +55,9 @@ typeCheckStmts = foldM typeCheckStmt
 
 -- | Type-check a single statement, updating the symbol table and logging errors.
 typeCheckStmt :: SymbolTable -> Stmt -> SemanticM SymbolTable
-typeCheckStmt st (Decl name rhs pos) = do
+typeCheckStmt st (Decl name mutability rhs pos) = do
   ty <- inferExpr st rhs
-  pure (addSymbol name ty pos st)
+  pure (addSymbol name ty mutability pos st)
 
 typeCheckStmt st (Assign lhs rhs pos) = do
   unless (isLValue lhs) $ logError (InvalidAssignmentTarget pos)
@@ -70,6 +70,10 @@ typeCheckStmt st (Assign lhs rhs pos) = do
       case lookupSymbol name st of
         Nothing -> pure st -- Undefined variable already reported by ScopeResolution pass.
         Just info -> do
+          -- Check for assignment to an immutable variable.
+          when (symbolMutability info == Immutable) $
+            logError (AssignmentToImmutableVariable name pos)
+
           let expectedTy = symbolType info
           -- Only report a mismatch if both types are known and different.
           let shouldReportError = expectedTy /= actualTy && expectedTy /= TUnknown && actualTy /= TUnknown

@@ -31,6 +31,7 @@ parseStatement :: [Token] -> ParseResult Stmt
 parseStatement [] = Left (ParseError "Unexpected end of input while parsing statement" eofPosition)
 parseStatement ts@(t:_) = case tokenType t of
   TKwLet -> parseDeclaration ts
+  TKwConst -> parseDeclaration ts
   TKwIf  -> parseIfStatement ts
   TKwOn  -> parseEventStatement ts
   TIdent _ -> parseAssignmentOrExprStatement ts
@@ -38,15 +39,17 @@ parseStatement ts@(t:_) = case tokenType t of
 -- declaration = "let" identifier "=" expression ;
 parseDeclaration :: [Token] -> ParseResult Stmt
 parseDeclaration (kw:rest0)
-  | tokenType kw == TKwLet = case rest0 of
+  | tokenType kw `elem` [TKwLet, TKwConst] = 
+    let mutability = if tokenType kw == TKwLet then Mutable else Immutable
+    in case rest0 of
       (idTok:eqTok:rest1)
         | TIdent name <- tokenType idTok
         , tokenType eqTok == TAssign -> do
             (rhs, rest2) <- parseExpression rest1
-            pure (Decl name rhs (tokenPosition idTok), rest2)
-      (t:_) -> Left (ParseError "Malformed 'let' declaration: expected identifier '=' expression" (tokenPosition t))
-      [] -> Left (ParseError "Unexpected end of input in 'let' declaration" eofPosition)
-parseDeclaration (t:_) = Left (ParseError "Expected 'let'" (tokenPosition t))
+            pure (Decl name mutability rhs (tokenPosition idTok), rest2)
+      (t:_) -> Left (ParseError "Malformed declaration: expected identifier '=' expression" (tokenPosition t))
+      [] -> Left (ParseError "Unexpected end of input in declaration" eofPosition)
+parseDeclaration (t:_) = Left (ParseError "Expected 'let' or 'const'" (tokenPosition t))
 parseDeclaration [] = Left (ParseError "Unexpected end of input" eofPosition)
 -- assignment    = identifier "=" expression ;
 -- functionCall  = member "(" [ argumentList ] ")" ;   (as a statement)

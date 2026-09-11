@@ -91,7 +91,7 @@ spec = do
 
     it "parses a let declaration" $ do
       let toks = [tok TKwLet, tok (TIdent "health"), tok TAssign, tok (TInt 100), tok TEOF]
-      parseStatement toks `shouldBe` Right (Decl "health" (LitInt 100) p, [tok TEOF])
+      parseStatement toks `shouldBe` Right (Decl "health" Mutable (LitInt 100) p, [tok TEOF])
 
     it "parses an assignment" $ do
       let toks = [ tok (TIdent "health"), tok TAssign, tok (TIdent "health")
@@ -174,7 +174,7 @@ spec = do
                  ]
       parseProgram toks
         `shouldBe` Right
-          ( [ Decl "score" (LitInt 0) p
+          ( [ Decl "score" Mutable (LitInt 0) p
             , OnEvent (KeyPress "SPACE") [ExprStmt (Call (Member (Var "player" p) "jump" p) [] p)] p
             ]
           , [tok TEOF]

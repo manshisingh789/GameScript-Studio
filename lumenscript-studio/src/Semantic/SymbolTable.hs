@@ -20,6 +20,7 @@ import Data.Map (Map)
 
 import Token (Position)
 import Semantic.ErrorLog (Type(..))
+import AST (Mutability(..))
 
 toList :: SymbolTable -> [(String, SymbolInfo)]
 toList (SymbolTable ss) = concatMap Map.toList ss
@@ -39,6 +40,7 @@ toList (SymbolTable ss) = concatMap Map.toList ss
 data SymbolInfo = SymbolInfo
   { symbolType :: Type
   , symbolPos  :: Position
+  , symbolMutability :: Mutability
   }
   deriving (Eq, Show)
 
@@ -77,20 +79,21 @@ exitScope st@(SymbolTable []) = st -- Should not happen, but is safe.
 declare
   :: String
   -> Type
+  -> Mutability
   -> Position
   -> SymbolTable
   -> Either Position SymbolTable -- Using `Either` here is idiomatic for functions that can fail.
                                  -- `Left` carries an error value (the position of the existing symbol).
                                  -- `Right` carries the success value (the updated symbol table).
-declare name ty pos (SymbolTable (current : rest)) =
+declare name ty mutability pos (SymbolTable (current : rest)) =
   case Map.lookup name current of
     -- Already declared in this scope, return position of original declaration.
     Just existing -> Left (symbolPos existing)
     -- New declaration, add it to the current scope.
     Nothing ->
-      let updatedScope = Map.insert name (SymbolInfo ty pos) current
+      let updatedScope = Map.insert name (SymbolInfo ty pos mutability) current
       in Right (SymbolTable (updatedScope : rest))
-declare _ _ _ (SymbolTable []) =
+declare _ _ _ _ (SymbolTable []) =
   error "SymbolTable.declare: empty scope stack -- this should be impossible."
 
 
@@ -100,13 +103,14 @@ declare _ _ _ (SymbolTable []) =
 addSymbol
   :: String
   -> Type
+  -> Mutability
   -> Position
   -> SymbolTable
   -> SymbolTable
-addSymbol name ty pos (SymbolTable (current : rest)) =
-  let updated = Map.insert name (SymbolInfo ty pos) current
+addSymbol name ty mutability pos (SymbolTable (current : rest)) =
+  let updated = Map.insert name (SymbolInfo ty pos mutability) current
   in SymbolTable (updated : rest)
-addSymbol _ _ _ (SymbolTable []) =
+addSymbol _ _ _ _ (SymbolTable []) =
   error "SymbolTable.addSymbol: empty scope stack -- this should be impossible."
 
 

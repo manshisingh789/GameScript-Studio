@@ -1,9 +1,7 @@
-module SemanticSpec (spec) where
+ module SemanticSpec (spec) where
 
--- External Imports
 import Test.Hspec
 
--- Internal Imports
 import AST
 import Token hiding (TString, TInt)
 import Semantic (analyzeProgram, SemanticResult(..))
@@ -34,9 +32,9 @@ analyze program = semanticErrors (analyzeProgram program)
 
 validProgram :: Program
 validProgram =
-  [ Decl "x" (LitInt 10) p
-  , Decl "message" (LitStr "hello") p2
-  , Decl "flag" (LitBool True) p3
+  [ Decl "x" Mutable (LitInt 10) p
+  , Decl "message" Mutable (LitStr "hello") p2
+  , Decl "flag" Mutable (LitBool True) p3
   ]
 
 
@@ -58,14 +56,14 @@ spec = do
 
       it "allows variables to be used after declaration" $ do
         let program =
-              [ Decl "x" (LitInt 10) p
+              [ Decl "x" Mutable (LitInt 10) p
               , ExprStmt (Var "x" p2)
               ]
         analyze program `shouldSatisfy` semanticOk
 
       it "allows integer arithmetic" $ do
         let program =
-              [ Decl "x"
+              [ Decl "x" Mutable
                   (Binary Add
                     (LitInt 10)
                     (LitInt 20)
@@ -86,7 +84,7 @@ spec = do
 
       it "allows valid unary integer negation" $ do
         let program =
-              [ Decl "x"
+              [ Decl "x" Mutable
                   (Unary Neg (LitInt 10) p)
                   p
               ]
@@ -94,7 +92,7 @@ spec = do
 
       it "allows valid boolean negation" $ do
         let program =
-              [ Decl "flag"
+              [ Decl "flag" Mutable
                   (Unary Not (LitBool True) p)
                   p
               ]
@@ -118,7 +116,7 @@ spec = do
 
       it "allows a variable declared before it is used" $ do
         let program =
-              [ Decl "x" (LitInt 10) p
+              [ Decl "x" Mutable (LitInt 10) p
               , ExprStmt (Var "x" p2)
               ]
         analyze program `shouldBe` []
@@ -126,7 +124,7 @@ spec = do
       it "reports use of a variable before declaration" $ do
         let program =
               [ ExprStmt (Var "x" p)
-              , Decl "x" (LitInt 10) p2
+              , Decl "x" Mutable (LitInt 10) p2
               ]
         analyze program
           `shouldBe`
@@ -135,8 +133,8 @@ spec = do
 
       it "reports duplicate declarations in the same scope" $ do
         let program =
-              [ Decl "x" (LitInt 10) p
-              , Decl "x" (LitInt 20) p2
+              [ Decl "x" Mutable (LitInt 10) p
+              , Decl "x" Mutable (LitInt 20) p2
               ]
         analyze program
           `shouldBe`
@@ -145,10 +143,10 @@ spec = do
 
       it "allows shadowing inside an if block" $ do
         let program =
-              [ Decl "x" (LitInt 10) p
+              [ Decl "x" Mutable (LitInt 10) p
               , If
                   (LitBool True)
-                  [ Decl "x" (LitInt 20) p2
+                  [ Decl "x" Mutable (LitInt 20) p2
                   , ExprStmt (Var "x" p3)
                   ]
                   Nothing
@@ -160,10 +158,10 @@ spec = do
         let program =
               [ If
                   (LitBool True)
-                  [ Decl "inside" (LitInt 10) p
+                  [ Decl "inside" Mutable (LitInt 10) p2
                   ]
                   Nothing
-                  p2
+                  p
               , ExprStmt (Var "inside" p3)
               ]
         analyze program
@@ -175,7 +173,7 @@ spec = do
         let program =
               [ OnEvent
                   (KeyPress "SPACE")
-                  [ Decl "inside" (LitInt 10) p ]
+                  [ Decl "inside" Mutable (LitInt 10) p ]
                   p2
               , ExprStmt (Var "inside" p3)
               ]
@@ -246,7 +244,7 @@ spec = do
                       "jump"
                       p2)
                     []
-                    p3)
+                    p2)
               ]
         analyze program `shouldSatisfy` semanticOk
 
@@ -259,11 +257,11 @@ spec = do
                       "jump"
                       p2)
                     [LitInt 10]
-                    p3)
+                    p2)
               ]
         analyze program
           `shouldBe`
-            [ ArityMismatch "player.jump" 0 1 p3
+            [ ArityMismatch "player.jump" 0 1 p2
             ]
 
       it "allows npc.say() with one string argument" $ do
@@ -275,7 +273,7 @@ spec = do
                       "say"
                       p2)
                     [LitStr "Hello"]
-                    p3)
+                    p2)
               ]
         analyze program `shouldSatisfy` semanticOk
 
@@ -288,11 +286,11 @@ spec = do
                       "say"
                       p2)
                     []
-                    p3)
+                    p2)
               ]
         analyze program
           `shouldBe`
-            [ ArityMismatch "npc.say" 1 0 p3
+            [ ArityMismatch "npc.say" 1 0 p2
             ]
 
       it "reports an argument type mismatch for npc.say()" $ do
@@ -304,7 +302,7 @@ spec = do
                       "say"
                       p2)
                     [LitInt 42]
-                    p3)
+                    p2)
               ]
         analyze program
           `shouldBe`
@@ -312,7 +310,7 @@ spec = do
                 TString
                 TInt
                 "argument to npc.say"
-                p3
+                p2
             ]
 
       it "reports only the root error within a function argument" $ do
@@ -325,7 +323,7 @@ spec = do
                       p2)
                     -- This argument expression contains a type error
                     [Binary Add (LitInt 1) (LitStr "bad") p3]
-                    p3)
+                    p2)
               ]
         -- We should only see the error from the invalid addition,
         -- not a TypeMismatch error for the 'say' call itself.
@@ -449,7 +447,7 @@ spec = do
 
       it "reports assignment type mismatch" $ do
         let program =
-              [ Decl "x" (LitInt 10) p
+              [ Decl "x" Mutable (LitInt 10) p
               , Assign (Var "x" p2) (LitStr "hello") p2
               ]
         analyze program
@@ -463,14 +461,14 @@ spec = do
 
       it "allows assignment when the type matches" $ do
         let program =
-              [ Decl "x" (LitInt 10) p
+              [ Decl "x" Mutable (LitInt 10) p
               , Assign (Var "x" p2) (LitInt 20) p2
               ]
         analyze program `shouldSatisfy` semanticOk
 
       it "reports an error when calling a non-function variable" $ do
         let program =
-              [ Decl "x" (LitInt 10) p
+              [ Decl "x" Mutable (LitInt 10) p
               , ExprStmt (Call (Var "x" p2) [] p2)
               ]
         analyze program
@@ -484,7 +482,7 @@ spec = do
 
       it "reports assignment type mismatch inside an if block" $ do
         let program =
-              [ Decl "x" (LitInt 10) p
+              [ Decl "x" Mutable (LitInt 10) p
               , If (LitBool True)
                   [ Assign (Var "x" p2) (LitStr "hello") p2
                   ]
@@ -546,7 +544,7 @@ spec = do
 
       it "marks semantic analysis as passed when no errors exist" $ do
         let program =
-              [ Decl "x" (LitInt 10) p
+              [ Decl "x" Mutable (LitInt 10) p
               , Assign (Var "x" p2) (LitInt 20) p2
               ]
         analyze program `shouldSatisfy` semanticOk

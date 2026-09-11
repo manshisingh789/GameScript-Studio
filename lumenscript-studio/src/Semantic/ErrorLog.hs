@@ -60,6 +60,7 @@ data SemanticError
   | InvalidOperandType    { operator :: String, operandTy :: Type, errPos :: Position }
   | InvalidCondition      { actualTy :: Type, errPos :: Position }
   | InvalidAssignmentTarget { errPos :: Position }
+  | AssignmentToImmutableVariable { errName :: String, errPos :: Position }
   | AssignmentTypeMismatch{ errName :: String, declaredTy :: Type, assignedTy :: Type, errPos :: Position }
   -- A generic warning for non-fatal issues, like unused variables.
   | GenericWarning        { message :: String, errPos :: Position }
@@ -90,6 +91,8 @@ renderError (InvalidCondition ty pos) =
   at pos ++ "condition must be bool, got " ++ show ty
 renderError (InvalidAssignmentTarget pos) =
   at pos ++ "invalid assignment target"
+renderError (AssignmentToImmutableVariable name pos) =
+  at pos ++ "cannot assign to immutable variable '" ++ name ++ "' (declared with 'const')"
 renderError (AssignmentTypeMismatch name declared assigned pos) =
   at pos ++ "cannot assign " ++ show assigned ++ " to '" ++ name ++ "' declared as " ++ show declared
 renderError (GenericWarning msg pos) =
