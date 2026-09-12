@@ -5,6 +5,7 @@ A chronological log of the project's development milestones.
 
 ### 13 September 2026
 
+- **Visual Bytecode Separation**: Refactored the bytecode architecture to visually separate the main script from event handlers. The Bytecode Viewer now renders distinct "MAIN" and "HANDLER" blocks, clarifying the event-driven structure for easier debugging.
 - **Polished Bytecode Viewer**: Updated the Bytecode Viewer to display a clean, indexed list of instructions. Each instruction is now prefixed with its line number and padded for alignment, significantly improving readability.
 
 **Challenges:** Aligning the test suite's expected output with the new dynamically padded and indexed instruction format proved tricky, requiring several attempts to fix spacing and formatting mismatches in the test assertions.

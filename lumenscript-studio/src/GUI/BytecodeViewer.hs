@@ -7,6 +7,9 @@ module GUI.BytecodeViewer
   ) where
 
 import Graphics.UI.Threepenny.Core (Element, UI)
+import Data.List (findIndex, sortBy)
+import AST (EventSpec(..))
+import Bytecode.Instruction (Instr(..))
 import GUI.Panel (createListPanel, updateListPanel)
 import VM.EventTrigger (CompiledProgram(..))
 
@@ -34,31 +37,65 @@ updateBytecodeViewer bv = updateListPanel (bvContent bv) placeholderMsg
 placeholderMsg :: String
 placeholderMsg = "(no bytecode yet -- compile a script to see it here)"
 
--- | Render a CompiledProgram as a readable listing: its registered
--- event handlers (event spec -> entry label) first, then every
--- instruction on its own line, in the order Bytecode.Generator
--- emitted them. Instr already derives Show, so each line is just that
--- instruction's default rendering (e.g. "PUSH_INT 5").
+-- | Render the flat bytecode stream as the two logical parts of a
+-- CompiledProgram: the main block followed by one block per handler.
+-- Each block gets local instruction numbers so the event-driven structure
+-- is visible without changing the VM's flat instruction representation.
 formatCompiledProgram :: CompiledProgram -> [String]
 formatCompiledProgram prog =
-  handlerLines ++ [""] ++ instrLines
+  formatBlock "MAIN" mainInstrs ++ concatMap formatHandler orderedHandlers
   where
-    handlerLines
-      | null (cpHandlers prog) = ["(no event handlers)"]
-      | otherwise = "Handlers:" : map showHandler (cpHandlers prog)
-
-    showHandler (spec, label) = "  " ++ show spec ++ " -> " ++ label
-
     instrs = cpInstrs prog
-    numInstrs = length instrs
-    padWidth = if numInstrs > 0 then length (show (numInstrs - 1)) else 0
+    handlers = cpHandlers prog
+    handlerLabels = map snd handlers
+    mainInstrs = takeWhile (not . isHandlerEntry handlerLabels) instrs
+    orderedHandlers = sortBy (compareHandler instrs) handlers
 
-    formatInstr (i, instr) =
-      let indexStr = show i
-          padding = replicate (padWidth - length indexStr) ' '
-      in indexStr ++ padding ++ "  " ++ show instr
+    formatHandler (spec, label) =
+      [""] ++ formatBlock ("HANDLER: " ++ eventName spec)
+        (handlerInstructions label)
 
-    instrLines = "Instructions:" : map formatInstr (zip [0..] instrs)
+    formatBlock title block =
+      [title, replicate (length title) '-'] ++ formatInstructions block
+
+    formatInstructions [] = ["(no instructions)"]
+    formatInstructions block =
+      let padWidth = length (show (length block - 1))
+          formatInstr (i, instr) =
+            let indexStr = show i
+                padding = replicate (padWidth - length indexStr) ' '
+            in indexStr ++ padding ++ "  " ++ show instr
+      in map formatInstr (zip [0..] block)
+
+    isHandlerEntry labels (LABEL label) = label `elem` labels
+    isHandlerEntry _ _ = False
+
+    compareHandler allInstrs (_, firstLabel) (_, secondLabel) =
+      compare (labelPosition allInstrs firstLabel)
+              (labelPosition allInstrs secondLabel)
+
+    labelPosition allInstrs label =
+      maybe maxBound id (findIndex (isLabel label) allInstrs)
+
+    isLabel label (LABEL actual) = label == actual
+    isLabel _ _ = False
+
+    handlerInstructions label =
+      takeThroughBoundary (dropWhile (not . isLabel label) instrs)
+
+    takeThroughBoundary [] = []
+    takeThroughBoundary (instr : rest) =
+      instr : if isAfterEvent instr
+                then []
+                else takeThroughBoundary rest
+
+    isAfterEvent (LABEL label) = "after_event_" `isPrefixOf` label
+    isAfterEvent _ = False
+
+    isPrefixOf prefix value = take (length prefix) value == prefix
+
+    eventName (KeyPress key) = key
+    eventName (GenericEvent name _) = name
 
 -- | Static placeholder rows shown before the first successful compile.
 dummyBytecodeLines :: [String]

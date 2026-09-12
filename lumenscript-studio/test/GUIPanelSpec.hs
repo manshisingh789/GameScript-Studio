@@ -47,9 +47,8 @@ spec = do
             , cpHandlers = []
             }
       formatCompiledProgram prog `shouldBe`
-        [ "(no event handlers)"
-        , ""
-        , "Instructions:"
+        [ "MAIN"
+        , "----"
         , "0  PUSH_INT 5"
         , "1  STORE_VAR \"x\""
         ]
@@ -60,10 +59,12 @@ spec = do
             , cpHandlers = [(KeyPress "SPACE", "key_press_SPACE")]
             }
       formatCompiledProgram prog `shouldBe`
-        [ "Handlers:"
-        , "  KeyPress \"SPACE\" -> key_press_SPACE"
+        [ "MAIN"
+        , "----"
+        , "(no instructions)"
         , ""
-        , "Instructions:"
+        , "HANDLER: SPACE"
+        , "--------------"
         , "0  LABEL \"key_press_SPACE\""
         , "1  PUSH_INT 1"
         , "2  POP"
@@ -72,9 +73,9 @@ spec = do
     it "says so plainly when there are no instructions at all" $ do
       let prog = CompiledProgram { cpInstrs = [], cpHandlers = [] }
       formatCompiledProgram prog `shouldBe`
-        [ "(no event handlers)"
-        , ""
-        , "Instructions:"
+        [ "MAIN"
+        , "----"
+        , "(no instructions)"
         ]
 
   describe "viewer placeholder data" $ do
