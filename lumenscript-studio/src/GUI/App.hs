@@ -91,7 +91,7 @@ runGui = do
 setup :: IORef String -> IORef VarEnv -> Window -> UI ()
 setup savedSourceRef savedVarEnvRef window = do
   void $ return window # set UI.title "LumenScript Studio"
-  UI.addStyleSheet window "/static/ast.css"
+  UI.addStyleSheet window "/ast.css"
 
   initialSource <- liftIO $ readIORef savedSourceRef
 

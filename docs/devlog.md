@@ -3,9 +3,17 @@
 
 A chronological log of the project's development milestones.
 
+### 13 September 2026
+
+- **Polished Bytecode Viewer**: Updated the Bytecode Viewer to display a clean, indexed list of instructions. Each instruction is now prefixed with its line number and padded for alignment, significantly improving readability.
+
+**Challenges:** Aligning the test suite's expected output with the new dynamically padded and indexed instruction format proved tricky, requiring several attempts to fix spacing and formatting mismatches in the test assertions.
+
 ### 12 September 2026
 
 - **Navigable AST Viewer**: Overhauled the AST Viewer, replacing the plain text dump with an interactive, navigable tree structure. The new view supports expanding and collapsing nodes and their children, significantly improving the debugging and analysis workflow.
+
+**Challenges:** Added a css file, but facing issues in implementing the integration of CSS styles with the AST Viewer.
 
 ### 10 & 11 September 2026
 

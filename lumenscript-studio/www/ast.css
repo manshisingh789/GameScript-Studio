@@ -6,12 +6,20 @@
 .tree-label {
   cursor: pointer;
   display: block;
-  padding: 2px 5px;
-  border-radius: 3px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  transition:
+    background-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
+  margin: 2px 0;
 }
 
 .tree-label:hover {
-  background-color: #f0f0f0;
+  background-color: #28a745; /* A pleasant green */
+  color: #ffffff;
+  border-color: #218838; /* A slightly darker green for the border */
 }
 
 .tree-children {

@@ -50,8 +50,8 @@ spec = do
         [ "(no event handlers)"
         , ""
         , "Instructions:"
-        , "  PUSH_INT 5"
-        , "  STORE_VAR \"x\""
+        , "0  PUSH_INT 5"
+        , "1  STORE_VAR \"x\""
         ]
 
     it "lists each handler on its own line, mapping event spec to entry label" $ do
@@ -61,12 +61,12 @@ spec = do
             }
       formatCompiledProgram prog `shouldBe`
         [ "Handlers:"
-        , "  " ++ show (KeyPress "SPACE") ++ " -> key_press_SPACE"
+        , "  KeyPress \"SPACE\" -> key_press_SPACE"
         , ""
         , "Instructions:"
-        , "  LABEL \"key_press_SPACE\""
-        , "  PUSH_INT 1"
-        , "  POP"
+        , "0  LABEL \"key_press_SPACE\""
+        , "1  PUSH_INT 1"
+        , "2  POP"
         ]
 
     it "says so plainly when there are no instructions at all" $ do

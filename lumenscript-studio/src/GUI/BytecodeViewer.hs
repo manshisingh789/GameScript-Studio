@@ -49,15 +49,24 @@ formatCompiledProgram prog =
 
     showHandler (spec, label) = "  " ++ show spec ++ " -> " ++ label
 
-    instrLines = "Instructions:" : map (("  " ++) . show) (cpInstrs prog)
+    instrs = cpInstrs prog
+    numInstrs = length instrs
+    padWidth = if numInstrs > 0 then length (show (numInstrs - 1)) else 0
+
+    formatInstr (i, instr) =
+      let indexStr = show i
+          padding = replicate (padWidth - length indexStr) ' '
+      in indexStr ++ padding ++ "  " ++ show instr
+
+    instrLines = "Instructions:" : map formatInstr (zip [0..] instrs)
 
 -- | Static placeholder rows shown before the first successful compile.
 dummyBytecodeLines :: [String]
 dummyBytecodeLines =
-  [ "LABEL main"
-  , "PUSH_INT 5"
-  , "STORE_VAR x"
-  , "LOAD player distance"
-  , "CALL player jump 0"
-  , "POP"
+  [ "0  LABEL main"
+  , "1  PUSH_INT 5"
+  , "2  STORE_VAR x"
+  , "3  LOAD player distance"
+  , "4  CALL player jump 0"
+  , "5  POP"
   ]
