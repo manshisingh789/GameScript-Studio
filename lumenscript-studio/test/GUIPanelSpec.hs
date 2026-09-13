@@ -11,6 +11,8 @@ import qualified GUI.ASTViewer as AV
 import GUI.BytecodeViewer (formatCompiledProgram)
 import qualified GUI.BytecodeViewer as BV
 import qualified GUI.StackTraceViewer as SV
+import VM.Stack (Value(..), emptyStack, push)
+import VM.VM (VMState(..))
 
 -- | A tiny helper type with a hand-written, deliberately multi-line
 -- Show instance, purely so 'formatAsLines' has something real to
@@ -90,3 +92,20 @@ spec = do
 
     it "StackTraceViewer's dummy lines are non-empty" $
       SV.dummyStackTraceLines `shouldSatisfy` (not . null)
+
+  describe "live stack trace formatting" $ do
+    it "renders the current IP and operand stack top first" $ do
+      let state = VMState
+            { vmStack = push (VBool True) (push (VInt 10) emptyStack)
+            , vmVars = mempty
+            , vmPC = 5
+            , vmInstrs = []
+            }
+      SV.formatLiveStackTrace state `shouldBe`
+        [ "IP: 5"
+        , ""
+        , "Operand Stack"
+        , "-------------"
+        , "[ True ]"
+        , "[ 10 ]"
+        ]

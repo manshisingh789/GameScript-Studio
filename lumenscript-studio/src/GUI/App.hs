@@ -1,22 +1,29 @@
 module GUI.App (runGui) where
 
+import Control.Concurrent (forkIO)
 import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
 import Data.IORef
 import qualified Data.Map as Map
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
+import qualified Graphics.UI.Threepenny.Timer as UITimer
 
 import Compiler (CompilationResult(..), PipelineStages(..), compileStages)
 import VM.EventTrigger (CompiledProgram(..))
 import Simulation.SimState
-import VM.VM (VarEnv, VMState (vmVars), execLoop, defaultHostEnv, initVMState, handlerEnd)
+import VM.VM (VarEnv, VMState(..), execLoopWithTrace, defaultHostEnv, initVMState, handlerEnd)
 
 import GUI.EditorPanel
 import GUI.TokenViewer
 import GUI.ASTViewer
 import GUI.BytecodeViewer
 import GUI.StackTraceViewer
+import GUI.SimulationViewer
+
+data TraceUpdate
+  = LiveFrame VMState
+  | FinalFrame [String]
 
 -- | The script shown in the editor the very first time the server is
 -- launched, before anyone has typed anything. Once you've edited the
@@ -59,17 +66,11 @@ simHeight = 8
 --                    to a "no bytecode" message on a semantic or parse
 --                    failure, rather than continuing to show whatever
 --                    the previous successful compile produced.
---   * Stack Trace -- every event handler registered in the compiled
---                    program is actually run once, in order, through
---                    Simulation.SimState against a real
---                    HostEnv/GridWorld (real VM.VM.runEvent
---                    underneath). The panel shows the real final
---                    variables and the real LOAD/CALL trace. This is
---                    a post-run summary, not a live
---                    single-instruction stepper -- VM.VM doesn't
---                    currently export the per-instruction primitives
---                    (`step`, `findLabelIndex`, `handlerEnd`) that a
---                    "Step" button would need.
+--   * Stack Trace -- post-instruction VM snapshots are queued while
+--                    the main body and every event handler run through
+--                    Simulation.SimState against a real HostEnv/GridWorld.
+--                    The panel displays the live IP and operand stack,
+--                    then the final variables and LOAD/CALL trace.
 --
 -- Persistence: 'savedSourceRef' is created exactly once, before
 -- 'startGUI' is called -- not inside 'setup'. Threepenny calls 'setup'
@@ -100,6 +101,20 @@ setup savedSourceRef savedVarEnvRef window = do
   astViewer        <- createASTViewer
   bytecodeViewer   <- createBytecodeViewer
   stackTraceViewer <- createStackTraceViewer
+  simulationViewer <- createSimulationViewer
+  traceQueueRef <- liftIO $ newIORef []
+
+  timerAction <- UI.timer
+  void $ pure timerAction # set UITimer.interval 16
+  on UITimer.tick timerAction $ \_ -> do
+    next <- liftIO $ atomicModifyIORef' traceQueueRef popTraceUpdate
+    case next of
+      Nothing -> pure ()
+      Just (LiveFrame state) ->
+        updateStackTraceViewer stackTraceViewer (formatLiveStackTrace state)
+      Just (FinalFrame lines') ->
+        updateStackTraceViewer stackTraceViewer lines'
+  UITimer.start timerAction
 
   void $ getBody window #+
     [ element (epRoot editor)
@@ -107,6 +122,7 @@ setup savedSourceRef savedVarEnvRef window = do
     , element (avRoot astViewer)
     , element (bvRoot bytecodeViewer)
     , element (svRoot stackTraceViewer)
+    , element (simRoot simulationViewer)
     ]
 
   -- Save the textarea's content into 'savedSourceRef' whenever it
@@ -138,14 +154,15 @@ setup savedSourceRef savedVarEnvRef window = do
       CompilationSuccess compiledProgram -> do
         void $ element (epStatus editor) # set UI.text "Compiled successfully."
         updateBytecodeViewer bytecodeViewer (formatCompiledProgram compiledProgram)
-        
-        -- Run the main script body and save the resulting variable environment
-        let initialVarEnv = Map.empty
-        finalVarEnv <- liftIO $ runMain compiledProgram initialVarEnv
-        liftIO $ writeIORef savedVarEnvRef finalVarEnv
-        
-        traceLines <- runAllHandlers compiledProgram finalVarEnv
-        updateStackTraceViewer stackTraceViewer traceLines
+        liftIO $ atomicWriteIORef traceQueueRef []
+        updateStackTraceViewer stackTraceViewer ["IP: starting", "", "Operand Stack", "-------------"]
+        void $ liftIO $ forkIO $ do
+          let initialVarEnv = Map.empty
+              trace = enqueueTraceUpdate traceQueueRef . LiveFrame
+          finalVarEnv <- runMain compiledProgram initialVarEnv trace
+          writeIORef savedVarEnvRef finalVarEnv
+          traceLines <- runAllHandlers compiledProgram finalVarEnv trace
+          enqueueTraceUpdate traceQueueRef (FinalFrame traceLines)
 
       SemanticErrors errs -> do
         void $ element (epStatus editor) # set UI.text
@@ -169,11 +186,11 @@ setup savedSourceRef savedVarEnvRef window = do
 -- Simulation.SimState.stepEvent, not fabricated data. Reports which
 -- handlers ran, the final variable store, and the full LOAD/CALL
 -- trace collected along the way.
-runAllHandlers :: CompiledProgram -> VarEnv -> UI [String]
-runAllHandlers prog initialVarEnv = liftIO $ do
+runAllHandlers :: CompiledProgram -> VarEnv -> (VMState -> IO ()) -> IO [String]
+runAllHandlers prog initialVarEnv trace = do
   ref <- newIORef (initSimState simWidth simHeight initialVarEnv)
   let specs = map fst (cpHandlers prog)
-  runQueued ref prog specs
+  mapM_ (\spec -> stepEventWithTrace ref prog spec trace) specs
   finalState <- readIORef ref
   pure $
     [ "Ran " ++ show (length specs) ++ " event handler(s): " ++ show specs
@@ -183,8 +200,15 @@ runAllHandlers prog initialVarEnv = liftIO $ do
     , "Execution trace (oldest first):"
     ] ++ reverse (simLog finalState)
 
-runMain :: CompiledProgram -> VarEnv -> IO VarEnv
-runMain prog varEnv = do
-    let st0 = initVMState (cpInstrs prog) varEnv 0
-    stFinal <- execLoop defaultHostEnv (handlerEnd "" (cpInstrs prog) []) st0
-    pure (vmVars stFinal)
+runMain :: CompiledProgram -> VarEnv -> (VMState -> IO ()) -> IO VarEnv
+runMain prog varEnv trace = do
+  let st0 = initVMState (cpInstrs prog) varEnv 0
+  stFinal <- execLoopWithTrace defaultHostEnv (handlerEnd "" (cpInstrs prog) []) trace st0
+  pure (vmVars stFinal)
+
+enqueueTraceUpdate :: IORef [TraceUpdate] -> TraceUpdate -> IO ()
+enqueueTraceUpdate ref update = atomicModifyIORef' ref (\updates -> (updates ++ [update], ()))
+
+popTraceUpdate :: [TraceUpdate] -> ([TraceUpdate], Maybe TraceUpdate)
+popTraceUpdate [] = ([], Nothing)
+popTraceUpdate (update:updates) = (updates, Just update)

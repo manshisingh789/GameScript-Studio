@@ -2,22 +2,18 @@ module GUI.StackTraceViewer
   ( StackTraceViewer(..)
   , createStackTraceViewer
   , updateStackTraceViewer
+  , formatLiveStackTrace
   , dummyStackTraceLines
   ) where
 
 import Graphics.UI.Threepenny.Core (Element, UI)
 import GUI.Panel (createListPanel, updateListPanel)
+import VM.Stack (Value, stackValues)
+import VM.VM (VMState(..))
 
--- | The stack-trace / execution-trace viewer panel. Shows
--- 'dummyStackTraceLines' only until the first compile -- GUI.App now
--- runs every registered event handler once through
--- Simulation.SimState against a real HostEnv/GridWorld, and calls
--- `updateStackTraceViewer viewer realTraceLines` with the resulting
--- variables and LOAD/CALL trace. That's a real run, but a post-run
--- summary rather than a live, single-instruction-at-a-time trace --
--- a true step-by-step view would need VM.VM to export its internal
--- stepping primitives (`step`, `findLabelIndex`, `handlerEnd`), which
--- it doesn't today.
+-- | The stack-trace / execution-trace viewer panel. GUI.App feeds it
+-- post-instruction VM snapshots while the real simulation is running,
+-- followed by the final variables and LOAD/CALL trace.
 data StackTraceViewer = StackTraceViewer
   { svRoot    :: Element
   , svContent :: Element
@@ -30,6 +26,17 @@ createStackTraceViewer = do
 
 updateStackTraceViewer :: StackTraceViewer -> [String] -> UI ()
 updateStackTraceViewer sv = updateListPanel (svContent sv) placeholderMsg
+
+formatLiveStackTrace :: VMState -> [String]
+formatLiveStackTrace state =
+  [ "IP: " ++ show (vmPC state)
+  , ""
+  , "Operand Stack"
+  , "-------------"
+  ] ++ map formatValue (stackValues (vmStack state))
+  where
+    formatValue :: Value -> String
+    formatValue value = "[ " ++ show value ++ " ]"
 
 placeholderMsg :: String
 placeholderMsg = "(no run yet -- step or run a script to see VM state here)"

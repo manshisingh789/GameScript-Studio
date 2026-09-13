@@ -33,6 +33,7 @@ library
                       , GUI.ASTViewer
                       , GUI.BytecodeViewer
                       , GUI.StackTraceViewer
+                      , GUI.SimulationViewer
                       , Compiler
                       , GUI.Panel
                       , GUI.App

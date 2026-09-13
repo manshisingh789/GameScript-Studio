@@ -2,6 +2,7 @@ module VM.Stack
   ( Value(..)
   , Stack
   , emptyStack
+  , stackValues
   , push
   , pop
   , peek
@@ -31,6 +32,9 @@ newtype Stack = Stack [Value]
 
 instance Show Stack where
   show (Stack vs) = "Stack " ++ show vs
+
+stackValues :: Stack -> [Value]
+stackValues (Stack vs) = vs
 
 emptyStack :: Stack
 emptyStack = Stack []

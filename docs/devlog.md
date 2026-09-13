@@ -5,6 +5,8 @@ A chronological log of the project's development milestones.
 
 ### 13 September 2026
 
+- **Simulation Viewer Scaffolding**: Created the initial scaffolding for the "Simulation Viewer" panel. This includes a new placeholder module (`GUI/SimulationViewer.hs`) and its integration into the main application layout (`GUI/App.hs`).
+- **Live Execution Tracing**: Implemented a live stack trace viewer that visualizes the VM's state. The VM now emits a snapshot after each instruction, allowing the GUI to display the instruction pointer (IP) and operand stack in real-time. Added regression tests per-instruction.
 - **Visual Bytecode Separation**: Refactored the bytecode architecture to visually separate the main script from event handlers. The Bytecode Viewer now renders distinct "MAIN" and "HANDLER" blocks, clarifying the event-driven structure for easier debugging.
 - **Polished Bytecode Viewer**: Updated the Bytecode Viewer to display a clean, indexed list of instructions. Each instruction is now prefixed with its line number and padded for alignment, significantly improving readability.
 

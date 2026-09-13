@@ -4,7 +4,9 @@ module VM.VM
   , VarEnv
   , VMState(..)
   , runEvent
+  , runEventWithTrace
   , execLoop
+  , execLoopWithTrace
   , fetchInstr
   , initVMState
   , handlerEnd
@@ -75,7 +77,10 @@ initVMState instrs vars startPC = VMState
 -- program), and execute from start to end. Returns the updated variable
 -- store so the caller can feed it back in for the next event.
 runEvent :: HostEnv -> CompiledProgram -> EventSpec -> VarEnv -> IO VarEnv
-runEvent host prog spec vars =
+runEvent host prog spec vars = runEventWithTrace host prog spec vars (\_ -> pure ())
+
+runEventWithTrace :: HostEnv -> CompiledProgram -> EventSpec -> VarEnv -> (VMState -> IO ()) -> IO VarEnv
+runEventWithTrace host prog spec vars trace =
   case findHandler spec prog of
     Nothing -> do
       putStrLn $ "[vm] no handler registered for event: " ++ show spec
@@ -88,7 +93,7 @@ runEvent host prog spec vars =
         Just startPC -> do
           let endPC = handlerEnd label instrs (map snd (cpHandlers prog))
               st0   = initVMState instrs vars startPC
-          stFinal <- execLoop host endPC st0
+          stFinal <- execLoopWithTrace host endPC trace st0
           pure (vmVars stFinal)
   where
     instrs = cpInstrs prog
@@ -139,12 +144,16 @@ fetchInstr st
 -- reaches endPC -- it never needs to inspect instructions to know when to
 -- stop, since runEvent already computed the boundary.
 execLoop :: HostEnv -> Int -> VMState -> IO VMState
-execLoop host endPC st
+execLoop host endPC = execLoopWithTrace host endPC (\_ -> pure ())
+
+execLoopWithTrace :: HostEnv -> Int -> (VMState -> IO ()) -> VMState -> IO VMState
+execLoopWithTrace host endPC trace st
   | vmPC st >= endPC = pure st
   | otherwise = do
       let instr = vmInstrs st !! vmPC st
       st' <- step host st instr
-      execLoop host endPC st'
+      trace st'
+      execLoopWithTrace host endPC trace st'
 
 step :: HostEnv -> VMState -> Instr -> IO VMState
 step host st instr = case instr of

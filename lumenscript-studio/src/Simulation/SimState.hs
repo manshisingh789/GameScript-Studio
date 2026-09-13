@@ -3,6 +3,7 @@ module Simulation.SimState
   , initSimState
   , mkSimHostEnv
   , stepEvent
+  , stepEventWithTrace
   , runQueued
   ) where
 
@@ -10,7 +11,7 @@ import Data.IORef
 import qualified Data.Map as Map
 
 import AST (EventSpec)
-import VM.VM (HostEnv(..), VarEnv, runEvent)
+import VM.VM (HostEnv(..), VarEnv, VMState, runEvent, runEventWithTrace)
 import VM.EventTrigger (CompiledProgram)
 import VM.Stack (Value(..))
 import Simulation.GridWorld
@@ -64,10 +65,13 @@ mkSimHostEnv ref = HostEnv
 -- This is the primitive a GUI "Step" button (or a single CLI command)
 -- would call once per user action.
 stepEvent :: IORef SimState -> CompiledProgram -> EventSpec -> IO ()
-stepEvent ref prog spec = do
+stepEvent ref prog spec = stepEventWithTrace ref prog spec (\_ -> pure ())
+
+stepEventWithTrace :: IORef SimState -> CompiledProgram -> EventSpec -> (VMState -> IO ()) -> IO ()
+stepEventWithTrace ref prog spec trace = do
   st <- readIORef ref
   let host = mkSimHostEnv ref
-  vars' <- runEvent host prog spec (simVars st)
+  vars' <- runEventWithTrace host prog spec (simVars st) trace
   modifyIORef' ref (\s -> s { simVars = vars' })
 
 -- | Continuous mode: drain a queue of events back-to-back with no

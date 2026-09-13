@@ -7,8 +7,8 @@ import Control.Exception (evaluate)
 
 import AST (EventSpec(..))
 import Bytecode.Instruction (Instr(..))
-import VM.Stack (Value(..), emptyStack)
-import VM.VM (defaultHostEnv, HostEnv(..), VMState(..), runEvent, fetchInstr)
+import VM.Stack (Value(..), emptyStack, stackValues)
+import VM.VM (defaultHostEnv, HostEnv(..), VMState(..), runEvent, fetchInstr, execLoopWithTrace, initVMState)
 import VM.EventTrigger (CompiledProgram(..))
 
 -- Two distinct events used across the tests below.
@@ -155,6 +155,20 @@ spec = do
       call `shouldBe` ("npc", "say")
 
   describe "runtime error handling" $ do
+
+    it "emits the post-instruction state after every instruction" $ do
+      let instrs = [PUSH_INT 10, PUSH_BOOL True, POP]
+      snapshotsRef <- newIORef []
+      _ <- execLoopWithTrace defaultHostEnv (length instrs)
+        (\state -> modifyIORef' snapshotsRef (++ [state]))
+        (initVMState instrs Map.empty 0)
+      snapshots <- readIORef snapshotsRef
+      map vmPC snapshots `shouldBe` [1, 2, 3]
+      map (stackValues . vmStack) snapshots `shouldBe`
+        [ [VInt 10]
+        , [VBool True, VInt 10]
+        , [VInt 10]
+        ]
 
     it "errors on stack underflow (POP on empty stack)" $ do
       let instrs = [ LABEL "onFoo", POP ]
