@@ -3,12 +3,15 @@ module GUI.App (runGui) where
 import Control.Concurrent (forkIO)
 import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
+import Data.Char (chr, toUpper)
+import Data.List (find)
 import Data.IORef
 import qualified Data.Map as Map
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 import qualified Graphics.UI.Threepenny.Timer as UITimer
 
+import AST (EventSpec(..))
 import Compiler (CompilationResult(..), PipelineStages(..), compileStages)
 import VM.EventTrigger (CompiledProgram(..))
 import Simulation.SimState
@@ -23,6 +26,7 @@ import GUI.SimulationViewer
 
 data TraceUpdate
   = LiveFrame VMState
+  | SimUpdate SimState
   | FinalFrame [String]
 
 -- | The script shown in the editor the very first time the server is
@@ -103,6 +107,8 @@ setup savedSourceRef savedVarEnvRef window = do
   stackTraceViewer <- createStackTraceViewer
   simulationViewer <- createSimulationViewer
   traceQueueRef <- liftIO $ newIORef []
+  compiledProgramRef <- liftIO $ newIORef Nothing
+  simStateRef <- liftIO $ newIORef (initSimState simWidth simHeight Map.empty)
 
   timerAction <- UI.timer
   void $ pure timerAction # set UITimer.interval 16
@@ -112,11 +118,14 @@ setup savedSourceRef savedVarEnvRef window = do
       Nothing -> pure ()
       Just (LiveFrame state) ->
         updateStackTraceViewer stackTraceViewer (formatLiveStackTrace state)
+      Just (SimUpdate state) ->
+        updateSimulationViewer simulationViewer state
       Just (FinalFrame lines') ->
         updateStackTraceViewer stackTraceViewer lines'
   UITimer.start timerAction
 
-  void $ getBody window #+
+  body <- getBody window
+  void $ pure body #+
     [ element (epRoot editor)
     , element (tvRoot tokenViewer)
     , element (avRoot astViewer)
@@ -133,6 +142,21 @@ setup savedSourceRef savedVarEnvRef window = do
   on UI.valueChange (epSourceArea editor) $ \_ -> do
     current <- get UI.value (epSourceArea editor)
     liftIO $ writeIORef savedSourceRef current
+
+  let triggerKey keyCode = do
+        compiled <- liftIO $ readIORef compiledProgramRef
+        case compiled of
+          Nothing -> pure ()
+          Just prog ->
+            case browserKeyName keyCode >>= matchingKeyName prog of
+              Nothing -> pure ()
+              Just keyName -> do
+                liftIO $ stepEventWithTrace simStateRef prog (KeyPress keyName)
+                  (enqueueTraceUpdate traceQueueRef . LiveFrame)
+                currentState <- liftIO $ readIORef simStateRef
+                liftIO $ enqueueTraceUpdate traceQueueRef (SimUpdate currentState)
+
+  on UI.keydown body triggerKey
 
   on UI.click (epCompileButton editor) $ \_ -> do
     source <- get UI.value (epSourceArea editor)
@@ -155,14 +179,16 @@ setup savedSourceRef savedVarEnvRef window = do
         void $ element (epStatus editor) # set UI.text "Compiled successfully."
         updateBytecodeViewer bytecodeViewer (formatCompiledProgram compiledProgram)
         liftIO $ atomicWriteIORef traceQueueRef []
+        liftIO $ atomicWriteIORef compiledProgramRef Nothing
         updateStackTraceViewer stackTraceViewer ["IP: starting", "", "Operand Stack", "-------------"]
         void $ liftIO $ forkIO $ do
           let initialVarEnv = Map.empty
-              trace = enqueueTraceUpdate traceQueueRef . LiveFrame
-          finalVarEnv <- runMain compiledProgram initialVarEnv trace
+          finalVarEnv <- runMain compiledProgram initialVarEnv (enqueueTraceUpdate traceQueueRef . LiveFrame)
           writeIORef savedVarEnvRef finalVarEnv
-          traceLines <- runAllHandlers compiledProgram finalVarEnv trace
-          enqueueTraceUpdate traceQueueRef (FinalFrame traceLines)
+          let initialSimState = initSimState simWidth simHeight finalVarEnv
+          writeIORef simStateRef initialSimState
+          writeIORef compiledProgramRef (Just compiledProgram)
+          enqueueTraceUpdate traceQueueRef (SimUpdate initialSimState)
 
       SemanticErrors errs -> do
         void $ element (epStatus editor) # set UI.text
@@ -186,11 +212,22 @@ setup savedSourceRef savedVarEnvRef window = do
 -- Simulation.SimState.stepEvent, not fabricated data. Reports which
 -- handlers ran, the final variable store, and the full LOAD/CALL
 -- trace collected along the way.
-runAllHandlers :: CompiledProgram -> VarEnv -> (VMState -> IO ()) -> IO [String]
-runAllHandlers prog initialVarEnv trace = do
+runAllHandlers :: CompiledProgram -> VarEnv -> (TraceUpdate -> IO ()) -> IO [String]
+runAllHandlers prog initialVarEnv sendTrace = do
   ref <- newIORef (initSimState simWidth simHeight initialVarEnv)
   let specs = map fst (cpHandlers prog)
-  mapM_ (\spec -> stepEventWithTrace ref prog spec trace) specs
+      trace = sendTrace . LiveFrame
+  
+  -- Send initial state before any handlers run
+  initialSimState <- readIORef ref
+  sendTrace (SimUpdate initialSimState)
+
+  mapM_ (\spec -> do
+    stepEventWithTrace ref prog spec trace
+    currentSimState <- readIORef ref
+    sendTrace (SimUpdate currentSimState)
+    ) specs
+  
   finalState <- readIORef ref
   pure $
     [ "Ran " ++ show (length specs) ++ " event handler(s): " ++ show specs
@@ -203,7 +240,7 @@ runAllHandlers prog initialVarEnv trace = do
 runMain :: CompiledProgram -> VarEnv -> (VMState -> IO ()) -> IO VarEnv
 runMain prog varEnv trace = do
   let st0 = initVMState (cpInstrs prog) varEnv 0
-  stFinal <- execLoopWithTrace defaultHostEnv (handlerEnd "" (cpInstrs prog) []) trace st0
+  (stFinal, ()) <- execLoopWithTrace defaultHostEnv (handlerEnd "" (cpInstrs prog) []) () trace st0
   pure (vmVars stFinal)
 
 enqueueTraceUpdate :: IORef [TraceUpdate] -> TraceUpdate -> IO ()
@@ -212,3 +249,38 @@ enqueueTraceUpdate ref update = atomicModifyIORef' ref (\updates -> (updates ++ 
 popTraceUpdate :: [TraceUpdate] -> ([TraceUpdate], Maybe TraceUpdate)
 popTraceUpdate [] = ([], Nothing)
 popTraceUpdate (update:updates) = (updates, Just update)
+
+browserKeyName :: Int -> Maybe String
+browserKeyName keyCode
+  | keyCode >= 65 && keyCode <= 90 = Just [chr keyCode]
+  | keyCode >= 48 && keyCode <= 57 = Just [chr keyCode]
+  | keyCode >= 112 && keyCode <= 123 = Just ("F" ++ show (keyCode - 111))
+  | otherwise = lookup keyCode
+      [ (8, "BACKSPACE")
+      , (9, "TAB")
+      , (13, "ENTER")
+      , (16, "SHIFT")
+      , (17, "CTRL")
+      , (18, "ALT")
+      , (27, "ESCAPE")
+      , (32, "SPACE")
+      , (33, "PAGE_UP")
+      , (34, "PAGE_DOWN")
+      , (35, "END")
+      , (36, "HOME")
+      , (37, "LEFT")
+      , (38, "UP")
+      , (39, "RIGHT")
+      , (40, "DOWN")
+      , (46, "DELETE")
+      ]
+
+matchingKeyName :: CompiledProgram -> String -> Maybe String
+matchingKeyName prog keyName =
+  case find matches (map fst (cpHandlers prog)) of
+    Just (KeyPress actualName) -> Just actualName
+    _                          -> Nothing
+  where
+    matches (KeyPress actualName) = normalize actualName == normalize keyName
+    matches _                    = False
+    normalize = map toUpper

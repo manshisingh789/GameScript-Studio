@@ -50,7 +50,7 @@ spec = do
             { cpInstrs   = instrs
             , cpHandlers = [ (evtFoo, "onFoo") ]
             }
-      vars <- runEvent defaultHostEnv prog evtFoo Map.empty
+      (vars, ()) <- runEvent defaultHostEnv prog evtFoo Map.empty ()
       Map.lookup "x" vars `shouldBe` Just (VInt 1)
 
     it "takes the else-branch when the condition is False" $ do
@@ -70,7 +70,7 @@ spec = do
             { cpInstrs   = instrs
             , cpHandlers = [ (evtFoo, "onFoo") ]
             }
-      vars <- runEvent defaultHostEnv prog evtFoo Map.empty
+      (vars, ()) <- runEvent defaultHostEnv prog evtFoo Map.empty ()
       Map.lookup "x" vars `shouldBe` Just (VInt 2)
 
     it "does not fall through past its own handler into the next handler's code" $ do
@@ -88,7 +88,7 @@ spec = do
             { cpInstrs   = instrs
             , cpHandlers = [ (evtFoo, "onFoo"), (evtBar, "onBar") ]
             }
-      vars <- runEvent defaultHostEnv prog evtFoo Map.empty
+      (vars, ()) <- runEvent defaultHostEnv prog evtFoo Map.empty ()
       Map.lookup "x" vars `shouldBe` Just (VInt 1)
 
     it "runs the second handler independently when triggered directly" $ do
@@ -104,7 +104,7 @@ spec = do
             { cpInstrs   = instrs
             , cpHandlers = [ (evtFoo, "onFoo"), (evtBar, "onBar") ]
             }
-      vars <- runEvent defaultHostEnv prog evtBar Map.empty
+      (vars, ()) <- runEvent defaultHostEnv prog evtBar Map.empty ()
       Map.lookup "x" vars `shouldBe` Just (VInt 99)
 
   describe "CALL" $ do
@@ -112,9 +112,8 @@ spec = do
     it "pops argc values off the stack in original left-to-right call order" $ do
       capturedArgs <- newIORef []
       let host = defaultHostEnv
-            { hostCall = \_obj _method args -> do
-                writeIORef capturedArgs args
-                pure (VInt 42)
+            { hostCall = \_world _obj _method args ->
+              writeIORef capturedArgs args >> pure (VInt 42, ())
             }
           -- push a1, a2, a3 then CALL obj method 3
           instrs =
@@ -129,7 +128,7 @@ spec = do
             { cpInstrs   = instrs
             , cpHandlers = [ (evtFoo, "onFoo") ]
             }
-      vars <- runEvent host prog evtFoo Map.empty
+      (vars, ()) <- runEvent host prog evtFoo Map.empty ()
       Map.lookup "result" vars `shouldBe` Just (VInt 42)
       args <- readIORef capturedArgs
       args `shouldBe` [VInt 1, VInt 2, VInt 3]
@@ -137,9 +136,8 @@ spec = do
     it "passes the object and method names through unchanged" $ do
       capturedCall <- newIORef ("", "")
       let host = defaultHostEnv
-            { hostCall = \obj method _args -> do
-                writeIORef capturedCall (obj, method)
-                pure VUnit
+            { hostCall = \_world obj method _args ->
+              writeIORef capturedCall (obj, method) >> pure (VUnit, ())
             }
           instrs =
             [ LABEL "onFoo"
@@ -150,7 +148,7 @@ spec = do
             { cpInstrs   = instrs
             , cpHandlers = [ (evtFoo, "onFoo") ]
             }
-      _ <- runEvent host prog evtFoo Map.empty
+      _ <- runEvent host prog evtFoo Map.empty ()
       call <- readIORef capturedCall
       call `shouldBe` ("npc", "say")
 
@@ -159,7 +157,7 @@ spec = do
     it "emits the post-instruction state after every instruction" $ do
       let instrs = [PUSH_INT 10, PUSH_BOOL True, POP]
       snapshotsRef <- newIORef []
-      _ <- execLoopWithTrace defaultHostEnv (length instrs)
+      _ <- execLoopWithTrace defaultHostEnv (length instrs) ()
         (\state -> modifyIORef' snapshotsRef (++ [state]))
         (initVMState instrs Map.empty 0)
       snapshots <- readIORef snapshotsRef
@@ -176,7 +174,7 @@ spec = do
             { cpInstrs   = instrs
             , cpHandlers = [ (evtFoo, "onFoo") ]
             }
-      runEvent defaultHostEnv prog evtFoo Map.empty
+      runEvent defaultHostEnv prog evtFoo Map.empty ()
         `shouldThrow` errorCall "[vm] stack underflow: pop on empty stack"
 
     it "errors with a descriptive message when the PC is out of bounds" $ do
@@ -199,7 +197,7 @@ spec = do
             { cpInstrs   = instrs
             , cpHandlers = [ (evtFoo, "onFoo") ]
             }
-      runEvent defaultHostEnv prog evtFoo Map.empty
+      runEvent defaultHostEnv prog evtFoo Map.empty ()
         `shouldThrow` errorCall "[vm] jump to undefined label: nowhere"
 
     it "returns the unchanged vars and logs when no handler is registered for the event" $ do
@@ -209,5 +207,5 @@ spec = do
             , cpHandlers = [ (evtFoo, "onFoo") ]  -- evtBar is not registered
             }
           initial = Map.fromList [("x", VInt 0)]
-      vars <- runEvent defaultHostEnv prog evtBar initial
+      (vars, ()) <- runEvent defaultHostEnv prog evtBar initial ()
       vars `shouldBe` initial

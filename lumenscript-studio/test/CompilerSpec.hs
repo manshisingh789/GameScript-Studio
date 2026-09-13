@@ -41,6 +41,33 @@ spec = do
            ParseError _ -> pure () -- Success if we get a parse error
            other -> expectationFailure $ "Expected a parse error, but got " ++ show other
 
+    it "compiles persistent Space and Shift handlers with global calls" $
+      let source = unlines
+            [ "let jumps = 2"
+            , "let canDash = true"
+            , "on key_press SPACE: {"
+            , "  if jumps > 0: {"
+            , "    jump()"
+            , "    jumps = jumps - 1"
+            , "  } else: {"
+            , "    print(\"No jumps remaining.\")"
+            , "  }"
+            , "}"
+            , "on key_press SHIFT: {"
+            , "  if canDash: {"
+            , "    dash()"
+            , "    canDash = false"
+            , "  } else: {"
+            , "    print(\"Dash unavailable.\")"
+            , "  }"
+            , "}"
+            ]
+      in case compile source of
+           CompilationSuccess prog -> do
+             cpHandlers prog `shouldSatisfy` (not . null)
+             cpInstrs prog `shouldSatisfy` any isCall
+           other -> expectationFailure $ "Expected CompilationSuccess, but got " ++ show other
+
 isStoreVarX :: Instr -> Bool
 isStoreVarX (STORE_VAR "x") = True
 isStoreVarX _ = False
@@ -48,3 +75,7 @@ isStoreVarX _ = False
 isJumpIfFalse :: Instr -> Bool
 isJumpIfFalse (JUMP_IF_FALSE _) = True
 isJumpIfFalse _ = False
+
+isCall :: Instr -> Bool
+isCall (CALL _ _ _) = True
+isCall _ = False

@@ -3,6 +3,14 @@
 
 A chronological log of the project's development milestones.
 
+### 14 September 2026
+
+- **Fixed Simulation State Persistence**: Resolved a critical bug where simulation state was discarded after VM execution. The VM now correctly propagates world state changes, ensuring that host calls (e.g., `player.jump()`) persist.
+- **Implemented End-to-End Keyboard Events**: Wired browser keyboard events to the VM, allowing user key presses to trigger corresponding event handlers in the running script.
+- **Dynamic Event Routing**: Refactored event dispatching to dynamically map browser key codes to their script handlers. The system now supports global host calls and case-insensitive matching for arbitrary keys, making event handling robust and flexible.
+
+**Challenges:** Threading the simulation state through the VM's execution pipeline required careful plumbing across multiple modules. The biggest challenge was debugging the end-to-end event flow, from browser key codes to the VM's dynamic, case-insensitive handler lookup.
+
 ### 13 September 2026
 
 - **Simulation Viewer Scaffolding**: Created the initial scaffolding for the "Simulation Viewer" panel. This includes a new placeholder module (`GUI/SimulationViewer.hs`) and its integration into the main application layout (`GUI/App.hs`).

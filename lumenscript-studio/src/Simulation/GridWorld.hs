@@ -125,6 +125,13 @@ gridLoad _        _          _  = Nothing
 gridCall :: Ident -> Ident -> [Value] -> GridWorld -> (GridWorld, Value)
 gridCall "player" "jump" _ gw =
   (gw { gwPlayer = playerJump (gwPlayer gw) }, VUnit)
+gridCall "" "jump" _ gw =
+  (gw { gwPlayer = playerJump (gwPlayer gw) }, VUnit)
+gridCall "" "dash" _ gw =
+  let player = gwPlayer gw
+  in (gw { gwPlayer = player { playerDistance = playerDistance player + 2 } }, VUnit)
+gridCall "" "print" _ gw =
+  (gw, VUnit)
 gridCall "enemy" "patrol" _ gw =
   (gw { gwEnemy = enemyPatrol gw (gwEnemy gw) }, VUnit)
 gridCall "enemy" "attack" _ gw =

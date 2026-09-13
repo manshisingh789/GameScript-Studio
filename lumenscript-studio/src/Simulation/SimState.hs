@@ -11,7 +11,7 @@ import Data.IORef
 import qualified Data.Map as Map
 
 import AST (EventSpec)
-import VM.VM (HostEnv(..), VarEnv, VMState, runEvent, runEventWithTrace)
+import VM.VM (HostEnv(..), VarEnv, VMState, runEventWithTrace)
 import VM.EventTrigger (CompiledProgram)
 import VM.Stack (Value(..))
 import Simulation.GridWorld
@@ -40,11 +40,10 @@ appendLog ref msg = modifyIORef' ref (\st -> st { simLog = msg : simLog st })
 -- IO-based by design (see its docs in VM.hs), so an IORef is the
 -- natural way to let LOAD/CALL instructions read and mutate the grid
 -- world in place while the VM's own core loop stays untouched.
-mkSimHostEnv :: IORef SimState -> HostEnv
+mkSimHostEnv :: IORef SimState -> HostEnv GridWorld
 mkSimHostEnv ref = HostEnv
-  { hostLoad = \obj field -> do
-      st <- readIORef ref
-      case gridLoad obj field (simWorld st) of
+  { hostLoad = \world obj field -> do
+      case gridLoad obj field world of
         Just v -> do
           appendLog ref ("[sim] " ++ obj ++ "." ++ field ++ " -> " ++ show v)
           pure v
@@ -53,12 +52,11 @@ mkSimHostEnv ref = HostEnv
           -- first, but don't crash the simulation over it.
           appendLog ref ("[sim] unknown property: " ++ obj ++ "." ++ field)
           pure VUnit
-  , hostCall = \obj method args -> do
-      st <- readIORef ref
-      let (world', result) = gridCall obj method args (simWorld st)
-      writeIORef ref st { simWorld = world' }
-      appendLog ref ("[sim] " ++ obj ++ "." ++ method ++ show args)
-      pure result
+    , hostCall = \world obj method args -> do
+      let (world', result) = gridCall obj method args world
+          target = if null obj then method else obj ++ "." ++ method
+      appendLog ref ("[sim] " ++ target ++ show args)
+      pure (result, world')
   }
 
 -- | Step-by-step mode: run exactly one event to completion and stop.
@@ -71,8 +69,8 @@ stepEventWithTrace :: IORef SimState -> CompiledProgram -> EventSpec -> (VMState
 stepEventWithTrace ref prog spec trace = do
   st <- readIORef ref
   let host = mkSimHostEnv ref
-  vars' <- runEventWithTrace host prog spec (simVars st) trace
-  modifyIORef' ref (\s -> s { simVars = vars' })
+  (vars', world') <- runEventWithTrace host prog spec (simVars st) (simWorld st) trace
+  modifyIORef' ref (\s -> s { simVars = vars', simWorld = world' })
 
 -- | Continuous mode: drain a queue of events back-to-back with no
 -- pause for user input between them (e.g. replaying a recorded input

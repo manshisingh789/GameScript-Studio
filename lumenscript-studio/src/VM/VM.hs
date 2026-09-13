@@ -24,10 +24,10 @@ import VM.EventTrigger (CompiledProgram(..), findHandler)
 -- | Pluggable interface for anything that touches the outside world --
 -- member reads (player.distance) and method calls (npc.say("hi")) -- so the
 -- VM's core loop doesn't need to know Simulation/HostBindings exist.
-data HostEnv = HostEnv
-  { hostLoad :: Ident -> Ident -> IO Value
+data HostEnv world = HostEnv
+  { hostLoad :: world -> Ident -> Ident -> IO Value
     -- ^ hostLoad "player" "distance" -> current value of player.distance
-  , hostCall :: Ident -> Ident -> [Value] -> IO Value
+  , hostCall :: world -> Ident -> Ident -> [Value] -> IO (Value, world)
     -- ^ hostCall "npc" "say" [VStr "hi"] -> perform the call, return a
     -- result value, or VUnit if the call doesn't produce one.
   }
@@ -36,14 +36,14 @@ data HostEnv = HostEnv
 -- today without a real HostBindings/Simulation.GridWorld implementation.
 -- Swap this for a real HostEnv once those exist -- nothing else in this
 -- module needs to change.
-defaultHostEnv :: HostEnv
+defaultHostEnv :: HostEnv ()
 defaultHostEnv = HostEnv
-  { hostLoad = \obj field -> do
+  { hostLoad = \_ obj field -> do
       putStrLn $ "[host] LOAD " ++ obj ++ "." ++ field ++ " (default: 0)"
       pure (VInt 0)
-  , hostCall = \obj method args -> do
+  , hostCall = \world obj method args -> do
       putStrLn $ "[host] CALL " ++ obj ++ "." ++ method ++ show args
-      pure VUnit
+      pure (VUnit, world)
   }
 
 -- | Runtime variable store. Semantic.ScopeResolution has already checked
@@ -76,25 +76,25 @@ initVMState instrs vars startPC = VMState
 -- where that handler's code ends (the next handler's LABEL, or end of the
 -- program), and execute from start to end. Returns the updated variable
 -- store so the caller can feed it back in for the next event.
-runEvent :: HostEnv -> CompiledProgram -> EventSpec -> VarEnv -> IO VarEnv
-runEvent host prog spec vars = runEventWithTrace host prog spec vars (\_ -> pure ())
+runEvent :: HostEnv world -> CompiledProgram -> EventSpec -> VarEnv -> world -> IO (VarEnv, world)
+runEvent host prog spec vars world = runEventWithTrace host prog spec vars world (\_ -> pure ())
 
-runEventWithTrace :: HostEnv -> CompiledProgram -> EventSpec -> VarEnv -> (VMState -> IO ()) -> IO VarEnv
-runEventWithTrace host prog spec vars trace =
+runEventWithTrace :: HostEnv world -> CompiledProgram -> EventSpec -> VarEnv -> world -> (VMState -> IO ()) -> IO (VarEnv, world)
+runEventWithTrace host prog spec vars world trace =
   case findHandler spec prog of
     Nothing -> do
       putStrLn $ "[vm] no handler registered for event: " ++ show spec
-      pure vars
+      pure (vars, world)
     Just label ->
       case findLabelIndex label instrs of
         Nothing -> do
           putStrLn $ "[vm] internal error: entry label not found in bytecode: " ++ label
-          pure vars
+          pure (vars, world)
         Just startPC -> do
           let endPC = handlerEnd label instrs (map snd (cpHandlers prog))
               st0   = initVMState instrs vars startPC
-          stFinal <- execLoopWithTrace host endPC trace st0
-          pure (vmVars stFinal)
+          (stFinal, worldFinal) <- execLoopWithTrace host endPC world trace st0
+          pure (vmVars stFinal, worldFinal)
   where
     instrs = cpInstrs prog
 
@@ -143,74 +143,74 @@ fetchInstr st
 -- | Fetch-execute loop, bounded to [.., endPC). Stops as soon as the PC
 -- reaches endPC -- it never needs to inspect instructions to know when to
 -- stop, since runEvent already computed the boundary.
-execLoop :: HostEnv -> Int -> VMState -> IO VMState
-execLoop host endPC = execLoopWithTrace host endPC (\_ -> pure ())
+execLoop :: HostEnv world -> Int -> world -> VMState -> IO (VMState, world)
+execLoop host endPC world = execLoopWithTrace host endPC world (\_ -> pure ())
 
-execLoopWithTrace :: HostEnv -> Int -> (VMState -> IO ()) -> VMState -> IO VMState
-execLoopWithTrace host endPC trace st
-  | vmPC st >= endPC = pure st
+execLoopWithTrace :: HostEnv world -> Int -> world -> (VMState -> IO ()) -> VMState -> IO (VMState, world)
+execLoopWithTrace host endPC world trace st
+  | vmPC st >= endPC = pure (st, world)
   | otherwise = do
       let instr = vmInstrs st !! vmPC st
-      st' <- step host st instr
+      (st', world') <- step host world st instr
       trace st'
-      execLoopWithTrace host endPC trace st'
+      execLoopWithTrace host endPC world' trace st'
 
-step :: HostEnv -> VMState -> Instr -> IO VMState
-step host st instr = case instr of
+step :: HostEnv world -> world -> VMState -> Instr -> IO (VMState, world)
+step host world st instr = case instr of
 
-  PUSH_INT n  -> pure $ advance st { vmStack = push (VInt n) (vmStack st) }
-  PUSH_STR s  -> pure $ advance st { vmStack = push (VStr s) (vmStack st) }
-  PUSH_BOOL b -> pure $ advance st { vmStack = push (VBool b) (vmStack st) }
+  PUSH_INT n  -> pure (advance st { vmStack = push (VInt n) (vmStack st) }, world)
+  PUSH_STR s  -> pure (advance st { vmStack = push (VStr s) (vmStack st) }, world)
+  PUSH_BOOL b  -> pure (advance st { vmStack = push (VBool b) (vmStack st) }, world)
 
   LOAD obj field -> do
-    v <- hostLoad host obj field
-    pure $ advance st { vmStack = push v (vmStack st) }
+    v <- hostLoad host world obj field
+    pure (advance st { vmStack = push v (vmStack st) }, world)
 
   LOAD_VAR name ->
     case Map.lookup name (vmVars st) of
-      Just v  -> pure $ advance st { vmStack = push v (vmStack st) }
+      Just v  -> pure (advance st { vmStack = push v (vmStack st) }, world)
       Nothing -> error $
         "[vm] undefined variable at runtime: " ++ name ++
         " (Semantic.ScopeResolution should have caught this at compile time)"
 
   STORE_VAR name ->
     let (v, stack') = pop (vmStack st)
-    in pure $ advance st { vmStack = stack', vmVars = Map.insert name v (vmVars st) }
+    in pure (advance st { vmStack = stack', vmVars = Map.insert name v (vmVars st) }, world)
 
   BINOP op ->
     let (rhs, s1) = pop (vmStack st)
         (lhs, s2) = pop s1
-    in pure $ advance st { vmStack = push (evalBinOp op lhs rhs) s2 }
+    in pure (advance st { vmStack = push (evalBinOp op lhs rhs) s2 }, world)
 
   UNOP op ->
     let (v, s1) = pop (vmStack st)
-    in pure $ advance st { vmStack = push (evalUnaryOp op v) s1 }
+    in pure (advance st { vmStack = push (evalUnaryOp op v) s1 }, world)
 
   JUMP_IF_FALSE label ->
     let (v, s1) = pop (vmStack st)
     in case v of
          VBool False -> jumpTo label st { vmStack = s1 }
-         VBool True  -> pure $ advance st { vmStack = s1 }
+         VBool True  -> pure (advance st { vmStack = s1 }, world)
          VInt 0      -> jumpTo label st { vmStack = s1 } -- Treat 0 as false
-         VInt _      -> pure $ advance st { vmStack = s1 } -- Treat non-zero as true
+         VInt _      -> pure (advance st { vmStack = s1 }, world) -- Treat non-zero as true
          other       -> error $ "[vm] JUMP_IF_FALSE expects a bool or int on the stack, got: " ++ show other
 
   JUMP label -> jumpTo label st
 
-  LABEL _ -> pure $ advance st  -- pure marker, no-op at runtime
+  LABEL _ -> pure (advance st, world)  -- pure marker, no-op at runtime
 
   CALL objName method argc -> do
     let (args, stack') = popN argc (vmStack st)
-    result <- hostCall host objName method args
-    pure $ advance st { vmStack = push result stack' }
+    (result, world') <- hostCall host world objName method args
+    pure (advance st { vmStack = push result stack' }, world')
 
   POP ->
     let (_, s1) = pop (vmStack st)
-    in pure $ advance st { vmStack = s1 }
+    in pure (advance st { vmStack = s1 }, world)
  
   where
     jumpTo label s = case findLabelIndex label (vmInstrs s) of
-      Just idx -> pure s { vmPC = idx }
+      Just idx -> pure (s { vmPC = idx }, world)
       Nothing  -> error $ "[vm] jump to undefined label: " ++ label
 
     -- Pops argc values and returns them in original left-to-right call

@@ -94,7 +94,7 @@ spec = do
     it "hostLoad reads a real player field and logs the read" $ do
       ref <- newIORef (initSimState 10 8 Map.empty)
       let host = mkSimHostEnv ref
-      v <- hostLoad host "player" "distance"
+      v <- hostLoad host (simWorld (initSimState 10 8 Map.empty)) "player" "distance"
       v `shouldBe` VInt 0
       st <- readIORef ref
       simLog st `shouldBe` ["[sim] player.distance -> 0"]
@@ -102,7 +102,7 @@ spec = do
     it "hostLoad on an unrecognized field logs a warning and returns VUnit" $ do
       ref <- newIORef (initSimState 10 8 Map.empty)
       let host = mkSimHostEnv ref
-      v <- hostLoad host "player" "nope"
+      v <- hostLoad host (simWorld (initSimState 10 8 Map.empty)) "player" "nope"
       v `shouldBe` VUnit
       st <- readIORef ref
       simLog st `shouldBe` ["[sim] unknown property: player.nope"]
@@ -110,18 +110,20 @@ spec = do
     it "hostCall mutates the world and logs the call" $ do
       ref <- newIORef (initSimState 10 8 Map.empty)
       let host = mkSimHostEnv ref
-      _ <- hostCall host "player" "jump" []
+      initial <- readIORef ref
+      (_, world') <- hostCall host (simWorld initial) "player" "jump" []
       st <- readIORef ref
-      playerDistance (gwPlayer (simWorld st)) `shouldBe` 1
-      playerJumps (gwPlayer (simWorld st)) `shouldBe` 1
+      playerDistance (gwPlayer world') `shouldBe` 1
+      playerJumps (gwPlayer world') `shouldBe` 1
       simLog st `shouldBe` ["[sim] player.jump[]"]
 
     it "hostCall on npc.say records the line via GridWorld" $ do
       ref <- newIORef (initSimState 10 8 Map.empty)
       let host = mkSimHostEnv ref
-      _ <- hostCall host "npc" "say" [VStr "hi"]
+      initial <- readIORef ref
+      (_, world') <- hostCall host (simWorld initial) "npc" "say" [VStr "hi"]
       st <- readIORef ref
-      npcLastLine (gwNpc (simWorld st)) `shouldBe` Just "hi"
+      npcLastLine (gwNpc world') `shouldBe` Just "hi"
 
   describe "stepEvent" $ do
     it "runs a handler's bytecode and threads variables back into SimState" $ do
