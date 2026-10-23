@@ -17,6 +17,10 @@ data EditorPanel = EditorPanel
   , epSourceArea    :: Element  -- ^ the textarea itself, for reading .value out of
   , epCompileButton :: Element  -- ^ the "Compile" button, for wiring an `on UI.click`
   , epStatus        :: Element  -- ^ a status line ("Compiled OK" / error text)
+  , epStepButton    :: Element
+  , epRunButton     :: Element
+  , epPauseButton   :: Element
+  , epResetButton   :: Element
   }
 
 -- | Build the editor panel, pre-filled with `initialSource` (e.g. a
@@ -37,6 +41,18 @@ createEditorPanel initialSource = do
     # set UI.text "Compile"
     # set UI.style [("margin-top", "8px")]
 
+  stepButton <- UI.button # set UI.text "Step"
+  runButton  <- UI.button # set UI.text "Run"
+  pauseButton <- UI.button # set UI.text "Pause"
+  resetButton <- UI.button # set UI.text "Reset"
+
+  controls <- UI.div
+    #+ [ element stepButton
+       , element runButton
+       , element pauseButton
+       , element resetButton
+       ]
+
   status <- UI.p
     # set UI.text ""
     # set UI.style [("font-style", "italic"), ("white-space", "pre-wrap")]
@@ -45,6 +61,7 @@ createEditorPanel initialSource = do
     #+ [ UI.h2 # set UI.text "Editor"
        , element sourceArea
        , element compileButton
+       , element controls
        , element status
        ]
 
@@ -53,4 +70,8 @@ createEditorPanel initialSource = do
     , epSourceArea    = sourceArea
     , epCompileButton = compileButton
     , epStatus        = status
+    , epStepButton  = stepButton
+    , epRunButton   = runButton
+    , epPauseButton = pauseButton
+    , epResetButton = resetButton
     }

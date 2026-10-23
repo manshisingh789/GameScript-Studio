@@ -24,6 +24,21 @@ import GUI.BytecodeViewer
 import GUI.StackTraceViewer
 import GUI.SimulationViewer
 
+import VM.StepControl
+  ( ExecMode(..)
+  , StepController(..)
+  , VMSnapshot(..)
+  , initStepController
+  , snapshotVM
+  )
+
+import VM.ExecutionWorker
+  ( ExecutionCommand(..)
+  , ExecutionWorker
+  , createExecutionWorker
+  , sendExecutionCommand
+  )
+
 data TraceUpdate
   = LiveFrame VMState
   | SimUpdate SimState
@@ -109,6 +124,7 @@ setup savedSourceRef savedVarEnvRef window = do
   traceQueueRef <- liftIO $ newIORef []
   compiledProgramRef <- liftIO $ newIORef Nothing
   simStateRef <- liftIO $ newIORef (initSimState simWidth simHeight Map.empty)
+  executionWorkerRef <- liftIO $ newIORef Nothing
 
   timerAction <- UI.timer
   void $ pure timerAction # set UITimer.interval 16
@@ -158,6 +174,50 @@ setup savedSourceRef savedVarEnvRef window = do
 
   on UI.keydown body triggerKey
 
+  on UI.click (epStepButton editor) $ \_ -> do
+    maybeWorker <- liftIO $ readIORef executionWorkerRef
+    case maybeWorker of
+      Nothing ->
+        void $ element (epStatus editor)
+          # set UI.text "Compile a program before stepping."
+      Just worker -> do
+        liftIO $ sendExecutionCommand worker StepCommand
+        void $ element (epStatus editor)
+          # set UI.text "Executed one instruction. Execution is paused."
+
+  on UI.click (epRunButton editor) $ \_ -> do
+    maybeWorker <- liftIO $ readIORef executionWorkerRef
+    case maybeWorker of
+      Nothing ->
+        void $ element (epStatus editor)
+          # set UI.text "Compile a program before running."
+      Just worker -> do
+        liftIO $ sendExecutionCommand worker RunCommand
+        void $ element (epStatus editor)
+          # set UI.text "Execution is running."
+
+  on UI.click (epPauseButton editor) $ \_ -> do
+    maybeWorker <- liftIO $ readIORef executionWorkerRef
+    case maybeWorker of
+      Nothing ->
+        void $ element (epStatus editor)
+          # set UI.text "No active program to pause."
+      Just worker -> do
+        liftIO $ sendExecutionCommand worker PauseCommand
+        void $ element (epStatus editor)
+          # set UI.text "Execution is paused."
+
+  on UI.click (epResetButton editor) $ \_ -> do
+    maybeWorker <- liftIO $ readIORef executionWorkerRef
+    case maybeWorker of
+      Nothing ->
+        void $ element (epStatus editor)
+          # set UI.text "No active program to reset."
+      Just worker -> do
+        liftIO $ sendExecutionCommand worker ResetCommand
+        void $ element (epStatus editor)
+          # set UI.text "Execution reset to the initial state."
+
   on UI.click (epCompileButton editor) $ \_ -> do
     source <- get UI.value (epSourceArea editor)
     liftIO $ writeIORef savedSourceRef source
@@ -176,19 +236,60 @@ setup savedSourceRef savedVarEnvRef window = do
 
     case psResult stages of
       CompilationSuccess compiledProgram -> do
-        void $ element (epStatus editor) # set UI.text "Compiled successfully."
-        updateBytecodeViewer bytecodeViewer (formatCompiledProgram compiledProgram)
+        void $ element (epStatus editor)
+          # set UI.text "Compiled successfully. Execution is paused."
+
+        updateBytecodeViewer bytecodeViewer
+          (formatCompiledProgram compiledProgram)
+
         liftIO $ atomicWriteIORef traceQueueRef []
-        liftIO $ atomicWriteIORef compiledProgramRef Nothing
-        updateStackTraceViewer stackTraceViewer ["IP: starting", "", "Operand Stack", "-------------"]
-        void $ liftIO $ forkIO $ do
-          let initialVarEnv = Map.empty
-          finalVarEnv <- runMain compiledProgram initialVarEnv (enqueueTraceUpdate traceQueueRef . LiveFrame)
-          writeIORef savedVarEnvRef finalVarEnv
-          let initialSimState = initSimState simWidth simHeight finalVarEnv
-          writeIORef simStateRef initialSimState
-          writeIORef compiledProgramRef (Just compiledProgram)
-          enqueueTraceUpdate traceQueueRef (SimUpdate initialSimState)
+        liftIO $ atomicWriteIORef compiledProgramRef (Just compiledProgram)
+
+        let initialVarEnv = Map.empty
+            instrs = cpInstrs compiledProgram
+            endPC = length instrs
+
+        -- Initialize the simulation state as before.
+        let initialSimState =
+              initSimState simWidth simHeight initialVarEnv
+
+        liftIO $ writeIORef simStateRef initialSimState
+        liftIO $ writeIORef savedVarEnvRef initialVarEnv
+
+        -- Initialize a fresh VM controller at instruction pointer 0.
+        let initialController =
+              initStepController instrs initialVarEnv 0 () endPC
+
+        -- Clear the previous execution worker.
+        liftIO $ writeIORef executionWorkerRef Nothing
+
+        -- Show the initial VM state.
+        let initialVMState = controllerVMState initialController
+
+        updateStackTraceViewer stackTraceViewer
+          [ "IP: " ++ show (vmPC initialVMState)
+          , ""
+          , "Operand Stack"
+          , "-------------"
+          ]
+
+        -- Start a worker that executes one instruction at a time.
+        worker <- liftIO $
+          createExecutionWorker
+            defaultHostEnv
+            initialController
+            (\snapshot ->
+              enqueueTraceUpdate traceQueueRef
+                (LiveFrame
+                  (initialVMState
+                    { vmPC = snapshotIP snapshot
+                    , vmStack = snapshotStack snapshot
+                    , vmVars = snapshotVars snapshot
+                  })
+                )
+            )
+
+        liftIO $ writeIORef executionWorkerRef (Just worker)
 
       SemanticErrors errs -> do
         void $ element (epStatus editor) # set UI.text

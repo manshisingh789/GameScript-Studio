@@ -46,6 +46,18 @@ stack run lumenscript-studio-exe -- demos/enemy_ai.lum
 stack run lumenscript-studio-exe -- demos/platformer.lum
 ```
 
+### VM execution controls
+
+After a successful compile, execution starts paused at instruction pointer
+`0`. The editor controls provide debugger-style execution:
+
+- **Step** executes exactly one instruction and remains paused.
+- **Run** advances instructions continuously until **Pause** is clicked or the
+  program reaches its end.
+- **Pause** stops further advancement without changing the current VM state.
+- **Reset** restores the initial instruction pointer, stack, variables, and
+  simulation world.
+
 ---
 
 ## Project Structure

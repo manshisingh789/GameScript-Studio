@@ -37,6 +37,8 @@ library
                       , Compiler
                       , GUI.Panel
                       , GUI.App
+                      , VM.ExecutionWorker
+                      , VM.StepControl
   build-depends:        base >= 4.7 && < 5
                       , text
                       , containers
@@ -72,6 +74,7 @@ test-suite lumenscript-studio-test
                       , SimStateSpec
                       , GUIPanelSpec
                       , CompilerStagesSpec
+                      , ExecutionWorkerSpec
   build-depends:        base
                       , lumenscript-studio
                       , hspec

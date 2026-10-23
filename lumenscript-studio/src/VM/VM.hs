@@ -8,6 +8,7 @@ module VM.VM
   , execLoop
   , execLoopWithTrace
   , fetchInstr
+  , stepInstruction
   , initVMState
   , handlerEnd
   ) where
@@ -140,18 +141,32 @@ fetchInstr st
     pc = vmPC st
     is = vmInstrs st
 
+
+-- | Execute exactly one instruction at the current program counter.
+--
+-- The caller is responsible for checking whether execution has finished
+-- before calling this function.
+stepInstruction
+  :: HostEnv world
+  -> world
+  -> VMState
+  -> IO (VMState, world)
+stepInstruction host world st = do
+  let instr = fetchInstr st
+  step host world st instr
+
 -- | Fetch-execute loop, bounded to [.., endPC). Stops as soon as the PC
 -- reaches endPC -- it never needs to inspect instructions to know when to
 -- stop, since runEvent already computed the boundary.
 execLoop :: HostEnv world -> Int -> world -> VMState -> IO (VMState, world)
 execLoop host endPC world = execLoopWithTrace host endPC world (\_ -> pure ())
 
-execLoopWithTrace :: HostEnv world -> Int -> world -> (VMState -> IO ()) -> VMState -> IO (VMState, world)
+execLoopWithTrace
+  :: HostEnv world -> Int -> world -> (VMState -> IO ()) -> VMState -> IO (VMState, world) 
 execLoopWithTrace host endPC world trace st
   | vmPC st >= endPC = pure (st, world)
   | otherwise = do
-      let instr = vmInstrs st !! vmPC st
-      (st', world') <- step host world st instr
+      (st', world') <- stepInstruction host world st
       trace st'
       execLoopWithTrace host endPC world' trace st'
 

@@ -3,6 +3,12 @@
 
 A chronological log of the project's development milestones.
 
+### 23 October 2026
+
+- **Step-Through Execution Controls**: Implemented core VM execution controls (Step, Run, Pause, Reset). This foundational feature allows for instruction-by-instruction observation of the VM's state, fulfilling a key sprint goal.
+- **Enhanced Execution Controls**: Added spec tests for the `ExecutionWorker` and implemented UI confirmation messages for VM operations (Run, Step, Pause) to improve user feedback.
+- **Updated Project Documentation**: Added v1 and v2 timeline documents and the official sprint plan for v2.
+
 ### 14 September 2026
 
 - **Fixed Simulation State Persistence**: Resolved a critical bug where simulation state was discarded after VM execution. The VM now correctly propagates world state changes, ensuring that host calls (e.g., `player.jump()`) persist.
