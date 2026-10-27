@@ -39,6 +39,9 @@ library
                       , GUI.App
                       , VM.ExecutionWorker
                       , VM.StepControl
+                      , SourceLink
+                      , LinkBuild
+                      , GUI.LinkPanel
   build-depends:        base >= 4.7 && < 5
                       , text
                       , containers
@@ -75,6 +78,9 @@ test-suite lumenscript-studio-test
                       , GUIPanelSpec
                       , CompilerStagesSpec
                       , ExecutionWorkerSpec
+                      , LinkBuildSpec
+                      , SourceLinkSpec
+                      , SourceLinkFixture
   build-depends:        base
                       , lumenscript-studio
                       , hspec

@@ -1,6 +1,7 @@
 module GUI.App (runGui) where
 
 import Control.Concurrent (forkIO)
+import Control.Exception (SomeException, try)
 import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (chr, toUpper)
@@ -23,6 +24,9 @@ import GUI.ASTViewer
 import GUI.BytecodeViewer
 import GUI.StackTraceViewer
 import GUI.SimulationViewer
+import GUI.LinkPanel                      -- NEW: synchronized highlighting panel
+import LinkBuild (buildLinkTable)         -- NEW: builds the Source/Token/AST link table
+import SourceLink (Selection(..))         -- NEW: SelCode etc. for VM-step highlighting
 
 import VM.StepControl
   ( ExecMode(..)
@@ -64,7 +68,7 @@ simWidth, simHeight :: Int
 simWidth  = 10
 simHeight = 8
 
--- | Launch the GUI: builds the editor and all four viewer panels,
+-- | Launch the GUI: builds the editor and all viewer panels,
 -- lays them out on the page, and wires the "Compile" button to run
 -- the full real pipeline exactly once per click via
 -- Compiler.compileStages -- Editor -> Lexer -> Parser -> Semantic
@@ -90,6 +94,11 @@ simHeight = 8
 --                    Simulation.SimState against a real HostEnv/GridWorld.
 --                    The panel displays the live IP and operand stack,
 --                    then the final variables and LOAD/CALL trace.
+--   * Pipeline Link -- NEW: Source / Tokens / AST / Bytecode side by
+--                    side; selecting anything in one column (or moving
+--                    the editor caret) highlights the matching items in
+--                    the others. Built from the same single
+--                    compileStages result.
 --
 -- Persistence: 'savedSourceRef' is created exactly once, before
 -- 'startGUI' is called -- not inside 'setup'. Threepenny calls 'setup'
@@ -121,6 +130,7 @@ setup savedSourceRef savedVarEnvRef window = do
   bytecodeViewer   <- createBytecodeViewer
   stackTraceViewer <- createStackTraceViewer
   simulationViewer <- createSimulationViewer
+  linkPanel        <- createLinkPanel                         -- NEW
   traceQueueRef <- liftIO $ newIORef []
   compiledProgramRef <- liftIO $ newIORef Nothing
   simStateRef <- liftIO $ newIORef (initSimState simWidth simHeight Map.empty)
@@ -132,8 +142,11 @@ setup savedSourceRef savedVarEnvRef window = do
     next <- liftIO $ atomicModifyIORef' traceQueueRef popTraceUpdate
     case next of
       Nothing -> pure ()
-      Just (LiveFrame state) ->
+      Just (LiveFrame state) -> do
         updateStackTraceViewer stackTraceViewer (formatLiveStackTrace state)
+        -- NEW: the instruction at the VM's instruction pointer lights up
+        -- across Source / Tokens / AST / Bytecode as you Step or Run.
+        selectInLinkPanel linkPanel (SelCode (vmPC state))
       Just (SimUpdate state) ->
         updateSimulationViewer simulationViewer state
       Just (FinalFrame lines') ->
@@ -143,6 +156,7 @@ setup savedSourceRef savedVarEnvRef window = do
   body <- getBody window
   void $ pure body #+
     [ element (epRoot editor)
+    , element (lpRoot linkPanel)                              -- NEW
     , element (tvRoot tokenViewer)
     , element (avRoot astViewer)
     , element (bvRoot bytecodeViewer)
@@ -158,6 +172,13 @@ setup savedSourceRef savedVarEnvRef window = do
   on UI.valueChange (epSourceArea editor) $ \_ -> do
     current <- get UI.value (epSourceArea editor)
     liftIO $ writeIORef savedSourceRef current
+
+  -- NEW: moving the caret / selecting text in the editor highlights the
+  -- linked tokens, AST nodes and instructions in the Pipeline Link panel.
+  on UI.keyup (epSourceArea editor) $ \_ ->
+    syncFromEditor linkPanel (epSourceArea editor)
+  on UI.click (epSourceArea editor) $ \_ ->
+    syncFromEditor linkPanel (epSourceArea editor)
 
   let triggerKey keyCode = do
         compiled <- liftIO $ readIORef compiledProgramRef
@@ -234,6 +255,17 @@ setup savedSourceRef savedVarEnvRef window = do
       Left parseErr ->
         updateASTViewer astViewer (Left $ "Parse failed: " ++ show parseErr)
 
+    -- NEW: build the Source -> Token -> AST link table from the same
+    -- stages (empty AST column if parsing failed) and refresh the
+    -- Pipeline Link panel.
+    let compiledInstrs = case psResult stages of
+          CompilationSuccess cp -> Just (cpInstrs cp)
+          _                     -> Nothing
+        linkTable = case psParse stages of
+          Right (program, _) -> buildLinkTable source (psTokens stages) program compiledInstrs
+          Left _             -> buildLinkTable source (psTokens stages) [] Nothing
+    updateLinkPanel linkPanel linkTable
+
     case psResult stages of
       CompilationSuccess compiledProgram -> do
         void $ element (epStatus editor)
@@ -249,12 +281,16 @@ setup savedSourceRef savedVarEnvRef window = do
             instrs = cpInstrs compiledProgram
             endPC = length instrs
 
-        -- Initialize the simulation state as before.
+        -- NEW: run the main (top-level) body once so `let`/`const` values
+        -- exist when a key event later runs a handler.
+        mainVars <- liftIO $ safeRunMain compiledProgram
+
         let initialSimState =
-              initSimState simWidth simHeight initialVarEnv
+              initSimState simWidth simHeight mainVars
 
         liftIO $ writeIORef simStateRef initialSimState
         liftIO $ writeIORef savedVarEnvRef initialVarEnv
+        liftIO $ enqueueTraceUpdate traceQueueRef (SimUpdate initialSimState)   -- NEW
 
         -- Initialize a fresh VM controller at instruction pointer 0.
         let initialController =
@@ -290,6 +326,9 @@ setup savedSourceRef savedVarEnvRef window = do
             )
 
         liftIO $ writeIORef executionWorkerRef (Just worker)
+
+        -- NEW: show the first instruction in the pipeline view.
+        selectInLinkPanel linkPanel (SelCode (vmPC initialVMState))
 
       SemanticErrors errs -> do
         void $ element (epStatus editor) # set UI.text
@@ -343,6 +382,13 @@ runMain prog varEnv trace = do
   let st0 = initVMState (cpInstrs prog) varEnv 0
   (stFinal, ()) <- execLoopWithTrace defaultHostEnv (handlerEnd "" (cpInstrs prog) []) () trace st0
   pure (vmVars stFinal)
+
+-- | 'runMain' that can never take the page down: if the VM throws while
+-- running the top-level code, start the simulation with no variables.
+safeRunMain :: CompiledProgram -> IO VarEnv
+safeRunMain prog = do
+  r <- try (runMain prog Map.empty (\_ -> pure ()))
+  pure (either (\e -> const Map.empty (e :: SomeException)) id r)
 
 enqueueTraceUpdate :: IORef [TraceUpdate] -> TraceUpdate -> IO ()
 enqueueTraceUpdate ref update = atomicModifyIORef' ref (\updates -> (updates ++ [update], ()))
