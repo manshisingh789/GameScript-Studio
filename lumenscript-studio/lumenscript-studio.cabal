@@ -44,6 +44,8 @@ library
                       , GUI.LinkPanel
                       , ErrorReport
                       , GUI.ErrorPanel
+                      , ApiCatalog
+                      , GUI.ApiExplorer
   build-depends:        base >= 4.7 && < 5
                       , text
                       , containers
@@ -84,6 +86,8 @@ test-suite lumenscript-studio-test
                       , SourceLinkSpec
                       , SourceLinkFixture
                       , ErrorReportSpec
+                      , ApiCatalogSpec
+                      , ApiCatalogCompilerSpec
   build-depends:        base
                       , lumenscript-studio
                       , hspec

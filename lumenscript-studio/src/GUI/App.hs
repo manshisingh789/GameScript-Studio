@@ -28,6 +28,7 @@ import GUI.LinkPanel                      -- NEW: synchronized highlighting pane
 import LinkBuild (buildLinkTable)         -- NEW: builds the Source/Token/AST link table
 import SourceLink (Selection(..))         -- NEW: SelCode etc. for VM-step highlighting
 import GUI.ErrorPanel                     -- NEW: stage indicator + error visualization
+import GUI.ApiExplorer                    -- NEW: native engine API explorer
 import ErrorReport (PipelineOutcome(..), buildReport)   -- NEW
 
 import VM.StepControl
@@ -134,6 +135,7 @@ setup savedSourceRef savedVarEnvRef window = do
   simulationViewer <- createSimulationViewer
   linkPanel        <- createLinkPanel                         -- NEW
   errorPanel       <- createErrorPanel (epSourceArea editor)  -- NEW
+  apiExplorer      <- createApiExplorer (epSourceArea editor) -- NEW
   traceQueueRef <- liftIO $ newIORef []
   compiledProgramRef <- liftIO $ newIORef Nothing
   simStateRef <- liftIO $ newIORef (initSimState simWidth simHeight Map.empty)
@@ -150,8 +152,10 @@ setup savedSourceRef savedVarEnvRef window = do
         -- NEW: the instruction at the VM's instruction pointer lights up
         -- across Source / Tokens / AST / Bytecode as you Step or Run.
         selectInLinkPanel linkPanel (SelCode (vmPC state))
-      Just (SimUpdate state) ->
+      Just (SimUpdate state) -> do
         updateSimulationViewer simulationViewer state
+        -- NEW: keep the live property values in the API explorer current
+        updateApiExplorerLive apiExplorer (simWorld state)
       Just (FinalFrame lines') ->
         updateStackTraceViewer stackTraceViewer lines'
   UITimer.start timerAction
@@ -160,6 +164,7 @@ setup savedSourceRef savedVarEnvRef window = do
   void $ pure body #+
     [ element (epRoot editor)
     , element (xpRoot errorPanel)                             -- NEW
+    , element (axRoot apiExplorer)                            -- NEW
     , element (lpRoot linkPanel)                              -- NEW
     , element (tvRoot tokenViewer)
     , element (avRoot astViewer)
