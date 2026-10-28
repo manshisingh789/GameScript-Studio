@@ -42,6 +42,8 @@ library
                       , SourceLink
                       , LinkBuild
                       , GUI.LinkPanel
+                      , ErrorReport
+                      , GUI.ErrorPanel
   build-depends:        base >= 4.7 && < 5
                       , text
                       , containers
@@ -81,6 +83,7 @@ test-suite lumenscript-studio-test
                       , LinkBuildSpec
                       , SourceLinkSpec
                       , SourceLinkFixture
+                      , ErrorReportSpec
   build-depends:        base
                       , lumenscript-studio
                       , hspec

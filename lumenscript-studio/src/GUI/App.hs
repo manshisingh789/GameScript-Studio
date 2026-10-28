@@ -27,6 +27,8 @@ import GUI.SimulationViewer
 import GUI.LinkPanel                      -- NEW: synchronized highlighting panel
 import LinkBuild (buildLinkTable)         -- NEW: builds the Source/Token/AST link table
 import SourceLink (Selection(..))         -- NEW: SelCode etc. for VM-step highlighting
+import GUI.ErrorPanel                     -- NEW: stage indicator + error visualization
+import ErrorReport (PipelineOutcome(..), buildReport)   -- NEW
 
 import VM.StepControl
   ( ExecMode(..)
@@ -131,6 +133,7 @@ setup savedSourceRef savedVarEnvRef window = do
   stackTraceViewer <- createStackTraceViewer
   simulationViewer <- createSimulationViewer
   linkPanel        <- createLinkPanel                         -- NEW
+  errorPanel       <- createErrorPanel (epSourceArea editor)  -- NEW
   traceQueueRef <- liftIO $ newIORef []
   compiledProgramRef <- liftIO $ newIORef Nothing
   simStateRef <- liftIO $ newIORef (initSimState simWidth simHeight Map.empty)
@@ -156,6 +159,7 @@ setup savedSourceRef savedVarEnvRef window = do
   body <- getBody window
   void $ pure body #+
     [ element (epRoot editor)
+    , element (xpRoot errorPanel)                             -- NEW
     , element (lpRoot linkPanel)                              -- NEW
     , element (tvRoot tokenViewer)
     , element (avRoot astViewer)
@@ -246,6 +250,9 @@ setup savedSourceRef savedVarEnvRef window = do
     -- One pipeline run drives every panel below -- no separate
     -- Lexer/Parser calls, no duplicated work.
     let stages = compileStages source
+
+    -- NEW: stage indicator + located, explained errors for this compile.
+    updateErrorPanel errorPanel (buildReport (outcomeOf source stages))
 
     updateTokenViewer tokenViewer (psTokens stages) (epSourceArea editor)
 
@@ -382,6 +389,22 @@ runMain prog varEnv trace = do
   let st0 = initVMState (cpInstrs prog) varEnv 0
   (stFinal, ()) <- execLoopWithTrace defaultHostEnv (handlerEnd "" (cpInstrs prog) []) () trace st0
   pure (vmVars stFinal)
+
+-- | NEW: what the error panel needs from one 'compileStages' run.  The
+-- errors are passed as their 'show' text so ErrorReport works for every
+-- present and future error kind.
+outcomeOf :: String -> PipelineStages -> PipelineOutcome
+outcomeOf source stages = PipelineOutcome
+  { poSource         = source
+  , poTokens         = psTokens stages
+  , poParseError     = either (Just . show) (const Nothing) (psParse stages)
+  , poSemanticErrors = case psResult stages of
+                         SemanticErrors es -> map show es
+                         _                 -> []
+  , poCompiled       = case psResult stages of
+                         CompilationSuccess _ -> True
+                         _                    -> False
+  }
 
 -- | 'runMain' that can never take the page down: if the VM throws while
 -- running the top-level code, start the simulation with no variables.
