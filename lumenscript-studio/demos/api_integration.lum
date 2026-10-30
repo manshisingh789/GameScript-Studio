@@ -1,0 +1,34 @@
+let progress = player.distance
+let level = player.level
+
+on key_press j: {
+    player.jump()
+    print("Player jumped!")
+
+    progress = player.distance
+    level = player.level
+
+    print(progress)
+    print(level)
+}
+
+on key_press d: {
+    dash()
+    print(player.distance)
+}
+
+on key_press e: {
+    enemy.patrol()
+}
+
+on key_press a: {
+    enemy.attack()
+}
+
+on key_press n: {
+    npc.say("Hello, traveler!")
+}
+
+on key_press g: {
+    jump()
+}

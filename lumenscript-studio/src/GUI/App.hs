@@ -29,6 +29,7 @@ import LinkBuild (buildLinkTable)         -- NEW: builds the Source/Token/AST li
 import SourceLink (Selection(..))         -- NEW: SelCode etc. for VM-step highlighting
 import GUI.ErrorPanel                     -- NEW: stage indicator + error visualization
 import GUI.ApiExplorer                    -- NEW: native engine API explorer
+import GUI.DocumentationPanel
 import ErrorReport (PipelineOutcome(..), buildReport)   -- NEW
 
 import VM.StepControl
@@ -136,6 +137,8 @@ setup savedSourceRef savedVarEnvRef window = do
   linkPanel        <- createLinkPanel                         -- NEW
   errorPanel       <- createErrorPanel (epSourceArea editor)  -- NEW
   apiExplorer      <- createApiExplorer (epSourceArea editor) -- NEW
+  documentation    <- createDocumentationPanel
+  void $ element (dpRoot documentation) # set UI.style [("display", "none")]
   traceQueueRef <- liftIO $ newIORef []
   compiledProgramRef <- liftIO $ newIORef Nothing
   simStateRef <- liftIO $ newIORef (initSimState simWidth simHeight Map.empty)
@@ -161,17 +164,41 @@ setup savedSourceRef savedVarEnvRef window = do
   UITimer.start timerAction
 
   body <- getBody window
+  editorSurface <- UI.div
+    # set UI.style [("display", "block")]
+    #+ [ element (epRoot editor)
+       , element (xpRoot errorPanel)
+       , element (axRoot apiExplorer)
+       , element (lpRoot linkPanel)
+       , element (tvRoot tokenViewer)
+       , element (avRoot astViewer)
+       , element (bvRoot bytecodeViewer)
+       , element (svRoot stackTraceViewer)
+       , element (simRoot simulationViewer)
+       ]
+  editorButton <- UI.button # set UI.text "Editor"
+  manualButton <- UI.button # set UI.text "Language Manual"
+  setActiveView editorButton True
+  setActiveView manualButton False
+  viewNav <- UI.div
+    # set UI.style [("display", "flex"), ("gap", "8px"), ("margin-bottom", "12px")]
+    #+ [element editorButton, element manualButton]
   void $ pure body #+
-    [ element (epRoot editor)
-    , element (xpRoot errorPanel)                             -- NEW
-    , element (axRoot apiExplorer)                            -- NEW
-    , element (lpRoot linkPanel)                              -- NEW
-    , element (tvRoot tokenViewer)
-    , element (avRoot astViewer)
-    , element (bvRoot bytecodeViewer)
-    , element (svRoot stackTraceViewer)
-    , element (simRoot simulationViewer)
+    [ element viewNav
+    , element editorSurface
+    , element (dpRoot documentation)
     ]
+
+  on UI.click editorButton $ \_ -> do
+    void $ element editorSurface # set UI.style [("display", "block")]
+    void $ element (dpRoot documentation) # set UI.style [("display", "none")]
+    setActiveView editorButton True
+    setActiveView manualButton False
+  on UI.click manualButton $ \_ -> do
+    void $ element editorSurface # set UI.style [("display", "none")]
+    void $ element (dpRoot documentation) # set UI.style [("display", "block")]
+    setActiveView editorButton False
+    setActiveView manualButton True
 
   -- Save the textarea's content into 'savedSourceRef' whenever it
   -- changes (fires on blur/edit-commit, same as a normal HTML
@@ -459,3 +486,14 @@ matchingKeyName prog keyName =
     matches (KeyPress actualName) = normalize actualName == normalize keyName
     matches _                    = False
     normalize = map toUpper
+
+setActiveView :: Element -> Bool -> UI ()
+setActiveView button active =
+  void $ element button # set UI.style
+    [ ("background", if active then "#2e5d50" else "transparent")
+    , ("color", if active then "#fff" else "inherit")
+    , ("border", "1px solid #2e5d50")
+    , ("border-radius", "4px")
+    , ("cursor", "pointer")
+    , ("padding", "6px 10px")
+    ]

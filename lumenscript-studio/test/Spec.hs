@@ -13,6 +13,8 @@ import qualified SimStateSpec
 import qualified GUIPanelSpec
 import qualified CompilerStagesSpec
 import qualified ExecutionWorkerSpec
+import qualified ApiIntegrationSpec
+import qualified LanguageManualSpec
 
 main :: IO ()
 main = hspec $ do
@@ -33,3 +35,5 @@ main = hspec $ do
   GUIPanelSpec.spec
   CompilerStagesSpec.spec
   ExecutionWorkerSpec.spec
+  ApiIntegrationSpec.spec
+  LanguageManualSpec.spec

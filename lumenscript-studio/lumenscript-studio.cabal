@@ -46,6 +46,8 @@ library
                       , GUI.ErrorPanel
                       , ApiCatalog
                       , GUI.ApiExplorer
+                      , GUI.DocumentationPanel
+                      , Documentation.LanguageManual
   build-depends:        base >= 4.7 && < 5
                       , text
                       , containers
@@ -88,6 +90,8 @@ test-suite lumenscript-studio-test
                       , ErrorReportSpec
                       , ApiCatalogSpec
                       , ApiCatalogCompilerSpec
+                      , ApiIntegrationSpec
+                      , LanguageManualSpec
   build-depends:        base
                       , lumenscript-studio
                       , hspec

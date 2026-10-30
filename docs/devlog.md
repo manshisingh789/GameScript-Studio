@@ -3,6 +3,12 @@
 
 A chronological log of the project's development milestones.
 
+### 30 October 2026
+
+- **Completed Language Manual & GUI**: Shipped the full Language Manual, documenting syntax, engine APIs, and examples. Implemented and integrated a navigable `DocumentationPanel.hs` into the main application GUI.
+- **Expanded API Integration Testing**: Broadened test coverage for player, enemy, and NPC APIs, including global functions and state transitions. Updated the Enemy AI demo to reflect new testing capabilities.
+- **Final Documentation Review**: Conducted a final review of the documentation feature, identifying minor usability enhancements and preparing it for verification.
+
 ### 23 October 2026
 
 - **Step-Through Execution Controls**: Implemented core VM execution controls (Step, Run, Pause, Reset). This foundational feature allows for instruction-by-instruction observation of the VM's state, fulfilling a key sprint goal.

@@ -67,7 +67,7 @@ After a successful compile, execution starts paused at instruction pointer
   - `Parser/`: Builds the Abstract Syntax Tree (AST).
   - `Semantic/`: Performs type checking and validation.
   - `Bytecode/`: Bytecode generation module (in progress)
-  - `GUI/`: IDE components
+  - `GUI/`: IDE components, including an interactive documentation viewer.
   - `Simulation/`: Game simulation logic
   - `VM/`: Virtual machine implementation
 - `test/`: Contains the test suites for all components
@@ -92,6 +92,12 @@ _On collision with a coin, increase the score_
 on collision "player" "coin": score = score + 10
 ```
 
+---
+
+## Integrated Documentation
+
+The LumenScript Studio IDE includes a built-in documentation viewer, providing a complete Language Manual that covers syntax, engine APIs, and practical examples. This allows you to learn and reference the language without leaving the editor.
+
 ## Project Roadmap
 
 - [x] **Lexer**: Tokenizes the source code. (Complete and documented)
@@ -104,6 +110,7 @@ on collision "player" "coin": score = score + 10
   - **Status**: Complete (compiler-v1.0-beta).
   - **Details**: The end-to-end compiler pipeline is complete, integrating the lexer, parser, semantic analysis, and bytecode generation. All tests pass and demo scripts compile successfully.
 - [x] **Virtual Machine (VM)**: Executes the compiled bytecode.
+- [x] **Documentation Viewer**: In-app manual for language syntax and APIs.
 
 ---
 

@@ -3,6 +3,10 @@ module Documentation.LanguageManual
   , manualSections
   ) where
 
+import Data.List (intercalate)
+
+import ApiCatalog
+
 data ManualSection = ManualSection
   { sectionId :: String
   , sectionTitle :: String
@@ -301,92 +305,76 @@ engineApi :: ManualSection
 engineApi = ManualSection
   "engine-api"
   "Engine API Reference"
-  (unlines
-    [ "This reference documents how LumenScript uses the built-in"
-    , "engine API. The API catalog and Engine API Explorer provide"
-    , "the authoritative list of available members."
+  (unlines $
+    [ "This reference is generated from the engine API catalog."
+    , "The catalog is built from HostBindings, so new engine members"
+    , "appear here automatically alongside the API Explorer."
     , ""
-    , "Player"
-    , ""
-    , "  player.distance"
-    , "    Syntax: player.distance"
-    , "    Type: int"
-    , "    Description: Cumulative progress. It increases by 1 for"
-    , "    every jump and by 2 for every dash."
-    , "    Example:"
-    , "      let progress = player.distance"
-    , ""
-    , "  player.level"
-    , "    Syntax: player.level"
-    , "    Type: int"
-    , "    Description: Starts at 1 and increases by 1 after every"
-    , "    third jump."
-    , "    Example:"
-    , "      let currentLevel = player.level"
-    , ""
-    , "  player.jump()"
-    , "    Syntax: player.jump()"
-    , "    Returns: void"
-    , "    Description: Increments the jump count and distance. It may"
-    , "    also increase the level when the jump completes a group of"
-    , "    three."
-    , "    Example:"
-    , "      player.jump()"
-    , ""
-    , "Enemy"
-    , ""
-    , "  enemy.patrol()"
-    , "    Syntax: enemy.patrol()"
-    , "    Returns: void"
-    , "    Description: Moves the enemy along the top row, turning"
-    , "    around at the grid edges."
-    , "    Example:"
-    , "      enemy.patrol()"
-    , ""
-    , "  enemy.attack()"
-    , "    Syntax: enemy.attack()"
-    , "    Returns: void"
-    , "    Description: Records an attack in the event log. It does not"
-    , "    modify the simulation world."
-    , "    Example:"
-    , "      enemy.attack()"
-    , ""
-    , "NPC"
-    , ""
-    , "  npc.say(text: string)"
-    , "    Syntax: npc.say(text)"
-    , "    Returns: void"
-    , "    Description: Makes the NPC say a line and stores it as the"
-    , "    last dialogue."
-    , "    Example:"
-    , "      npc.say(\"Welcome, traveler!\")"
-    , ""
-    , "Global Functions"
-    , ""
-    , "  print(text: string)"
-    , "    Syntax: print(text)"
-    , "    Returns: void"
-    , "    Description: Prints a string but does not modify the"
-    , "    simulation world."
-    , "    Example:"
-    , "      print(\"The enemy attacked.\")"
-    , ""
-    , "  jump()"
-    , "    Syntax: jump()"
-    , "    Returns: void"
-    , "    Description: Equivalent to player.jump(). It increments the"
-    , "    jump count and distance and may increase the level."
-    , "    Example:"
-    , "      jump()"
-    , ""
-    , "  dash()"
-    , "    Syntax: dash()"
-    , "    Returns: void"
-    , "    Description: Increases player.distance by 2 without changing"
-    , "    the jump count or level."
-    , "    Example:"
-    , "      dash()"
-    ])
+    ] ++ concatMap renderApiObject apiCatalog)
+
+renderApiObject :: ApiObject -> [String]
+renderApiObject object =
+  [ titleFor object
+  , ""
+  , "  " ++ headingFor object
+  , "  " ++ separator
+  ] ++
+  map (("  " ++) . renderApiMember) (aoMembers object) ++
+  [ ""
+  , "  Example:"
+  ] ++
+  map ("    " ++) (categoryExample (aoName object) (aoMembers object)) ++
+  [ "" ]
+  where
+    separator = replicate 78 '-'
+
+titleFor :: ApiObject -> String
+titleFor object
+  | null (aoName object) = "Global Functions"
+  | otherwise            = objectTitle object
+
+headingFor :: ApiObject -> String
+headingFor object
+  | null (aoName object) = "Function             Type    Description"
+  | otherwise            = "Member               Type    Description"
+
+renderApiMember :: ApiMember -> String
+renderApiMember member =
+  padRight 21 (apiSyntax member) ++ " " ++
+  padRight 7 (maybe "void" tyName (amType member)) ++ " " ++
+  amDoc member
+
+apiSyntax :: ApiMember -> String
+apiSyntax member =
+  qualifiedName member ++ case amKind member of
+    KindProperty -> ""
+    _ -> "(" ++ intercalate ", " (map fst (amParams member)) ++ ")"
+
+padRight :: Int -> String -> String
+padRight width value = value ++ replicate (max 1 (width - length value)) ' '
+
+categoryExample :: String -> [ApiMember] -> [String]
+categoryExample "player" _ =
+  [ "let progress = player.distance"
+  , "let currentLevel = player.level"
+  , "player.jump()"
+  ]
+categoryExample "enemy" _ =
+  [ "on key_press e: {"
+  , "    enemy.patrol()"
+  , "    enemy.attack()"
+  , "}"
+  ]
+categoryExample "npc" _ =
+  [ "npc.say(\"Hello, traveler!\")" ]
+categoryExample "" _ =
+  [ "print(\"Player jumped!\")"
+  , "jump()"
+  , "dash()"
+  ]
+categoryExample _ (member:_) =
+  [ insertText member ]
+categoryExample _ [] = [ "# No members are currently available." ]
 
 
 comments :: ManualSection
