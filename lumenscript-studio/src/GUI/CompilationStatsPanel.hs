@@ -22,11 +22,11 @@ setupCompilationStatsPanel :: UI.UI CompilationStatsPanel
 setupCompilationStatsPanel = do
     title <- UI.h3 #+ [UI.string "Compilation Statistics"]
 
-    linesValue <- UI.span # set UI.text "N/A"
-    tokensValue <- UI.span # set UI.text "N/A"
-    astValue <- UI.span # set UI.text "N/A"
-    bytecodeValue <- UI.span # set UI.text "N/A"
-    timeValue <- UI.span # set UI.text "N/A"
+    linesValue <- UI.span # set UI.text "-- "
+    tokensValue <- UI.span # set UI.text "-- "
+    astValue <- UI.span # set UI.text "-- "
+    bytecodeValue <- UI.span # set UI.text "-- "
+    timeValue <- UI.span # set UI.text "-- "
 
     let metric label value =
             UI.div #. "stat-item"
@@ -71,10 +71,10 @@ updateCompilationStatsPanel panel stats = do
         (show (statTokenCount stats))
 
     void $ element (cspAST panel) # set UI.text
-        (maybe "N/A" show (statASTNodes stats))
+        (maybe "-- " show (statASTNodes stats))
 
     void $ element (cspBytecode panel) # set UI.text
-        (maybe "N/A" show (statBytecodeCount stats))
+        (maybe "-- " show (statBytecodeCount stats))
 
     void $ element (cspTime panel) # set UI.text
         (show (fromIntegral (round (statCompileTimeMs stats * 100)) / (100 :: Double)) ++ " ms")
