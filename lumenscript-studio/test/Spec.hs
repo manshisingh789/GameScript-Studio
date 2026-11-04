@@ -12,6 +12,7 @@ import qualified GridWorldSpec
 import qualified SimStateSpec
 import qualified GUIPanelSpec
 import qualified CompilerStagesSpec
+import qualified CompilationStatsSpec
 import qualified ExecutionWorkerSpec
 import qualified ApiIntegrationSpec
 import qualified LanguageManualSpec
@@ -34,6 +35,7 @@ main = hspec $ do
 
   GUIPanelSpec.spec
   CompilerStagesSpec.spec
+  CompilationStatsSpec.spec
   ExecutionWorkerSpec.spec
   ApiIntegrationSpec.spec
   LanguageManualSpec.spec

@@ -7,7 +7,7 @@ A chronological log of the project's development milestones.
 
 - **Implemented Compilation Statistics Panel**: Shipped the Compilation Statistics feature, integrating a new panel into the GUI to display key metrics (LLOC, tokens, AST nodes, bytecode, compile time).
 - **Ensured Accurate Metrics**: Implemented robust timing using a monotonic clock and `deepseq` to force full evaluation, preventing inaccuracies from lazy evaluation. The pipeline was also optimized to avoid redundant processing.
-- **Status**: Implementation is complete and integrated. Functional testing across various success and failure scenarios is pending.
+- **Added Initial Tests**: Wrote three new test cases to verify correct AST node, bytecode instruction, and LLOC counts. Full functional testing is still pending.
 
 ### 30 October 2026
 
