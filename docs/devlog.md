@@ -3,6 +3,12 @@
 
 A chronological log of the project's development milestones.
 
+### 4 November 2026
+
+- **Implemented Compilation Statistics Panel**: Shipped the Compilation Statistics feature, integrating a new panel into the GUI to display key metrics (LLOC, tokens, AST nodes, bytecode, compile time).
+- **Ensured Accurate Metrics**: Implemented robust timing using a monotonic clock and `deepseq` to force full evaluation, preventing inaccuracies from lazy evaluation. The pipeline was also optimized to avoid redundant processing.
+- **Status**: Implementation is complete and integrated. Functional testing across various success and failure scenarios is pending.
+
 ### 30 October 2026
 
 - **Completed Language Manual & GUI**: Shipped the full Language Manual, documenting syntax, engine APIs, and examples. Implemented and integrated a navigable `DocumentationPanel.hs` into the main application GUI.

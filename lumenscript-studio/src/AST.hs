@@ -10,6 +10,7 @@ module AST
   ) where
 
 import Token (Position)
+import Control.DeepSeq (NFData(..))
 
 -- | An identifier, typically a variable or function name.
 type Ident = String
@@ -26,11 +27,31 @@ data Expr
   | Call Expr [Expr] Position        -- ^ A function call, e.g., `func(a, b)`. Stores the position of the opening parenthesis.
   deriving (Show, Eq)
 
+instance NFData Expr where
+    rnf expr = case expr of
+        LitInt n -> rnf n
+        LitStr s -> rnf s
+        LitBool b -> rnf b
+        Var ident pos -> rnf ident `seq` rnf pos
+        Member obj ident pos ->
+            rnf obj `seq` rnf ident `seq` rnf pos
+        Unary op operand pos ->
+            rnf op `seq` rnf operand `seq` rnf pos
+        Binary op left right pos ->
+            rnf op `seq` rnf left `seq` rnf right `seq` rnf pos
+        Call callee args pos ->
+            rnf callee `seq` rnf args `seq` rnf pos
+
 -- | Unary operators.
 data UnaryOp
   = Neg -- ^ Negation, e.g., `-x`.
   | Not -- ^ Logical not, e.g., `!flag`.
   deriving (Show, Eq)
+
+instance NFData UnaryOp where
+    rnf op = case op of
+        Neg -> ()
+        Not -> ()
 
 -- | Binary operators.
 data BinOp
@@ -39,6 +60,22 @@ data BinOp
   | And | Or                       -- ^ Logical operators: &&, ||
   deriving (Show, Eq)
 
+instance NFData BinOp where
+    rnf op = case op of
+        Add -> ()
+        Sub -> ()
+        Mul -> ()
+        Div -> ()
+        Mod -> ()
+        Eq -> ()
+        NotEq -> ()
+        Lt -> ()
+        Gt -> ()
+        Le -> ()
+        Ge -> ()
+        And -> ()
+        Or -> ()
+
 -- | Specifies the type of event for an `OnEvent` block.
 -- Made a generic EventSpec if we decided to add more event types (future scope)
 data EventSpec
@@ -46,11 +83,21 @@ data EventSpec
   | GenericEvent Ident [Ident] -- or EventName + parameters
   deriving (Show, Eq)
 
+instance NFData EventSpec where
+    rnf event = case event of
+        KeyPress key -> rnf key
+        GenericEvent name params -> rnf name `seq` rnf params
+
 -- | Specifies whether a variable is mutable or immutable.
 data Mutability
   = Mutable   -- ^ Declared with 'let'.
   | Immutable -- ^ Declared with 'const'.
   deriving (Show, Eq)
+
+instance NFData Mutability where
+    rnf mutability = case mutability of
+        Mutable -> ()
+        Immutable -> ()
 
 -- | Represents a statement in the LumenScript language.
 data Stmt
@@ -60,6 +107,22 @@ data Stmt
   | If Expr [Stmt] (Maybe [Stmt]) Position -- ^ An if-else statement. Stores the position of the 'if' keyword.
   | OnEvent EventSpec [Stmt] Position  -- ^ An event handler block, e.g., `on key_press SPACE: { ... }`. Stores the position of the 'on' keyword.
   deriving (Show, Eq)
+
+instance NFData Stmt where
+    rnf stmt = case stmt of
+        Decl ident mutability expr pos ->
+            rnf ident `seq` rnf mutability `seq` rnf expr `seq` rnf pos
+        Assign target value pos ->
+            rnf target `seq` rnf value `seq` rnf pos
+        ExprStmt expr ->
+            rnf expr
+        If condition thenBody elseBody pos ->
+            rnf condition `seq`
+            rnf thenBody `seq`
+            rnf elseBody `seq`
+            rnf pos
+        OnEvent eventSpec body pos ->
+            rnf eventSpec `seq` rnf body `seq` rnf pos
 
 -- | A program is a list of statements.
 type Program = [Stmt]

@@ -5,6 +5,7 @@ module VM.EventTrigger
 
 import AST (EventSpec(..))
 import Bytecode.Instruction (Instr, Label)
+import Control.DeepSeq (NFData(..))
 
 -- | The compiled form of a whole Program: one flat instruction stream (every
 -- OnEvent body concatenated back to back, each preceded by a LABEL marking
@@ -15,6 +16,10 @@ data CompiledProgram = CompiledProgram
   { cpInstrs   :: [Instr]
   , cpHandlers :: [(EventSpec, Label)]
   } deriving (Show, Eq)
+
+instance NFData CompiledProgram where
+    rnf (CompiledProgram instructions handlers) =
+        rnf instructions `seq` rnf handlers
 
 -- | Look up which label to jump to when `spec` fires. If two `on key_press
 -- SPACE:` blocks exist, this returns the first match -- Semantic checking

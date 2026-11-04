@@ -48,7 +48,10 @@ library
                       , GUI.ApiExplorer
                       , GUI.DocumentationPanel
                       , Documentation.LanguageManual
+                      , Statistics.CompilationStats
+                      , GUI.CompilationStatsPanel
   build-depends:        base >= 4.7 && < 5
+                      , deepseq
                       , text
                       , containers
                       , mtl

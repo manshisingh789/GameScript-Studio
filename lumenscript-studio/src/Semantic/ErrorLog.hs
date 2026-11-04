@@ -17,6 +17,7 @@ module Semantic.ErrorLog
 
 import Token (Position)
 import Data.List (intercalate)
+import Control.DeepSeq (NFData(..))
 
 -- ---------------------------------------------------------------------
 -- Types
@@ -40,10 +41,24 @@ instance Show Type where
   show TUnknown        = "<unknown>"
   show (TFunction as r) = "(" ++ intercalate ", " (map show as) ++ ") -> " ++ show r
 
+instance NFData Type where
+  rnf ty = case ty of
+    TInt -> ()
+    TString -> ()
+    TBool -> ()
+    TVoid -> ()
+    TUnknown -> ()
+    TFunction args result -> rnf args `seq` rnf result
+
 -- | All semantic checks produce a diagnostic with a severity.
 -- Fatal errors will block bytecode generation; warnings will not.
 data Severity = Warning | Fatal
   deriving (Eq, Show)
+
+instance NFData Severity where
+  rnf severity = case severity of
+    Warning -> ()
+    Fatal -> ()
 
 -- ---------------------------------------------------------------------
 -- Diagnostics
@@ -65,6 +80,36 @@ data SemanticError
   -- A generic warning for non-fatal issues, like unused variables.
   | GenericWarning        { message :: String, errPos :: Position }
   deriving (Eq, Show)
+
+instance NFData SemanticError where
+  rnf err = case err of
+    UndefinedVariable name pos ->
+      rnf name `seq` rnf pos
+    UndefinedFunction name pos ->
+      rnf name `seq` rnf pos
+    UndefinedMember base name pos ->
+      rnf base `seq` rnf name `seq` rnf pos
+    DuplicateDeclaration name pos first ->
+      rnf name `seq` rnf pos `seq` rnf first
+    TypeMismatch expected actual context pos ->
+      rnf expected `seq` rnf actual `seq`
+      rnf context `seq` rnf pos
+    ArityMismatch name expected actual pos ->
+      rnf name `seq` rnf expected `seq`
+      rnf actual `seq` rnf pos
+    InvalidOperandType op ty pos ->
+      rnf op `seq` rnf ty `seq` rnf pos
+    InvalidCondition ty pos ->
+      rnf ty `seq` rnf pos
+    InvalidAssignmentTarget pos ->
+      rnf pos
+    AssignmentToImmutableVariable name pos ->
+      rnf name `seq` rnf pos
+    AssignmentTypeMismatch name declared assigned pos ->
+      rnf name `seq` rnf declared `seq`
+      rnf assigned `seq` rnf pos
+    GenericWarning message pos ->
+      rnf message `seq` rnf pos
 
 -- | Determines if an error should block compilation.
 severityOf :: SemanticError -> Severity

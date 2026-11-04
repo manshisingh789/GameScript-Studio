@@ -1,9 +1,13 @@
 module ParserTypes where
 
 import Token
+import Control.DeepSeq (NFData(..))
 
 data ParseError = ParseError String Position
   deriving (Show, Eq)
+
+instance NFData ParseError where
+    rnf (ParseError message pos) = rnf message `seq` rnf pos
 
 -- Every parse function: consume some tokens, return the parsed value
 -- plus whatever tokens are left over.

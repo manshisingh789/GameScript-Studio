@@ -1,9 +1,10 @@
 module Compiler
-    ( compile
-    , CompilationResult(..)
-    , compileStages
-    , PipelineStages(..)
-    ) where
+   ( compile
+   , CompilationResult(..)
+   , compileStages
+   , compileStagesTimed
+   , PipelineStages(..)
+   ) where
 
 import qualified Lexer
 import qualified Parser
@@ -15,6 +16,8 @@ import qualified ParserTypes as PT
 import VM.EventTrigger (CompiledProgram(..))
 import Semantic (SemanticResult(..))
 import Semantic.ErrorLog (SemanticError)
+import GHC.Clock (getMonotonicTimeNSec)
+import Control.DeepSeq (NFData(..), deepseq)
 
 -- | The final result of a compilation attempt.
 data CompilationResult
@@ -22,6 +25,12 @@ data CompilationResult
   | SemanticErrors [SemanticError]
   | ParseError String -- Using String for now, can be refined.
   deriving (Eq, Show)
+
+instance NFData CompilationResult where
+  rnf result = case result of
+    CompilationSuccess program -> rnf program
+    SemanticErrors errors -> rnf errors
+    ParseError message -> rnf message
 
 -- | Every stage's real intermediate result from a single pipeline
 -- run, for callers (like the GUI) that want to show more than just
@@ -44,10 +53,15 @@ data PipelineStages = PipelineStages
     -- succeeded.
   }
 
--- | Run the full pipeline once, keeping every stage's real
--- intermediate result.
-compileStages :: String -> PipelineStages
-compileStages source =
+instance NFData PipelineStages where
+  rnf stages =
+    rnf (psTokens stages) `seq`
+    rnf (psParse stages) `seq`
+    rnf (psResult stages)
+
+-- | The internal implementation of the compiler pipeline.
+runPipeline :: String -> PipelineStages
+runPipeline source =
   let tokens      = Lexer.lexer source
       parseResult = Parser.parseProgram tokens
       result = case parseResult of
@@ -60,6 +74,30 @@ compileStages source =
                       Right program -> CompilationSuccess program
                else SemanticErrors (Semantic.semanticErrors semanticResult)
   in PipelineStages tokens parseResult result
+
+evaluatePipeline :: String -> IO PipelineStages
+evaluatePipeline source = do
+    let stages = runPipeline source
+    stages `deepseq` pure stages
+
+-- | Run the full pipeline once, keeping every stage's real
+-- intermediate result.
+compileStages :: String -> PipelineStages
+compileStages = runPipeline
+
+-- One caveat: this compiler timer measures the compiler pipeline's work, including the evaluation needed to produce its results. It is an end-to-end pipeline measurement, not a benchmark of individual compiler functions.
+compileStagesTimed :: String -> IO (PipelineStages, Double)
+compileStagesTimed source = do
+    start <- getMonotonicTimeNSec
+
+    stages <- evaluatePipeline source
+
+    end <- getMonotonicTimeNSec
+
+    let elapsedMs =
+            fromIntegral (end - start) / 1000000.0
+
+    pure (stages, elapsedMs)
 
 -- | The main compilation pipeline.
 --   Takes source text and returns either a compiled program or an error.

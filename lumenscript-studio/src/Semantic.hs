@@ -4,7 +4,7 @@ module Semantic
   ) where
 
 import AST (Program)
-import Semantic.ErrorLog (SemanticError)
+import Semantic.ErrorLog (SemanticError, hasFatalErrors)
 import Semantic.ScopeResolution (resolveProgram)
 import Semantic.TypeCheck (typeCheckProgram)
 import Semantic.SymbolTable (SymbolTable)
@@ -24,7 +24,7 @@ analyzeProgram prog =
       allErrors   = scopeErrors ++ typeErrors
   in SemanticResult
        { semanticErrors = allErrors
-       , semanticPassed = null allErrors
+       , semanticPassed = not (hasFatalErrors allErrors)
        , semanticAst    = prog
        , semanticSymbolTable = finalTable
        }

@@ -13,10 +13,25 @@ import Graphics.UI.Threepenny.Core
 import qualified Graphics.UI.Threepenny.Timer as UITimer
 
 import AST (EventSpec(..))
-import Compiler (CompilationResult(..), PipelineStages(..), compileStages)
 import VM.EventTrigger (CompiledProgram(..))
 import Simulation.SimState
 import VM.VM (VarEnv, VMState(..), execLoopWithTrace, defaultHostEnv, initVMState, handlerEnd)
+
+import Compiler
+  ( CompilationResult(..)
+  , PipelineStages(..)
+  , compileStagesTimed
+  )
+
+import Statistics.CompilationStats
+  ( CompilationStats(..)
+  , countLogicalLines
+  , countTokens
+  , countASTNodes
+  , countBytecodeInstructions
+  )
+
+import GUI.CompilationStatsPanel
 
 import GUI.EditorPanel
 import GUI.TokenViewer
@@ -137,8 +152,9 @@ setup savedSourceRef savedVarEnvRef window = do
   linkPanel        <- createLinkPanel                         -- NEW
   errorPanel       <- createErrorPanel (epSourceArea editor)  -- NEW
   apiExplorer      <- createApiExplorer (epSourceArea editor) -- NEW
-  documentation    <- createDocumentationPanel
+  documentation <- createDocumentationPanel
   void $ element (dpRoot documentation) # set UI.style [("display", "none")]
+  compilationStatsPanel <- setupCompilationStatsPanel
   traceQueueRef <- liftIO $ newIORef []
   compiledProgramRef <- liftIO $ newIORef Nothing
   simStateRef <- liftIO $ newIORef (initSimState simWidth simHeight Map.empty)
@@ -167,6 +183,7 @@ setup savedSourceRef savedVarEnvRef window = do
   editorSurface <- UI.div
     # set UI.style [("display", "block")]
     #+ [ element (epRoot editor)
+       , element (cspContainer compilationStatsPanel)
        , element (xpRoot errorPanel)
        , element (axRoot apiExplorer)
        , element (lpRoot linkPanel)
@@ -279,9 +296,28 @@ setup savedSourceRef savedVarEnvRef window = do
     source <- get UI.value (epSourceArea editor)
     liftIO $ writeIORef savedSourceRef source
 
-    -- One pipeline run drives every panel below -- no separate
-    -- Lexer/Parser calls, no duplicated work.
-    let stages = compileStages source
+    -- Run the compiler pipeline and measure its execution time.
+    (stages, compileTimeMs) <- liftIO $ compileStagesTimed source
+
+    -- Calculate statistics using the already-produced pipeline stages.
+    let astNodeCount = case psParse stages of
+          Right (program, _) -> Just (countASTNodes program)
+          Left _             -> Nothing
+
+        bytecodeCount = case psResult stages of
+          CompilationSuccess program ->
+            Just (countBytecodeInstructions program)
+          _ -> Nothing
+
+        stats = CompilationStats
+          { statLogicalLines  = countLogicalLines source
+          , statTokenCount    = countTokens (psTokens stages)
+          , statASTNodes      = astNodeCount
+          , statBytecodeCount = bytecodeCount
+          , statCompileTimeMs = compileTimeMs
+          }
+
+    updateCompilationStatsPanel compilationStatsPanel stats
 
     -- NEW: stage indicator + located, explained errors for this compile.
     updateErrorPanel errorPanel (buildReport (outcomeOf source stages))
